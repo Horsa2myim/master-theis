@@ -1,0 +1,15 @@
+\contentsline {table}{\numberline {1.1}{\ignorespaces 基于组合和搜索的因果发现算法}}{7}{table.caption.9}%
+\contentsline {table}{\numberline {1.2}{\ignorespaces 基于连续优化的因果发现方法}}{11}{table.caption.10}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces 实验参数设置与训练细节}}{37}{table.caption.16}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Results of joint learning tasks}}{39}{table.caption.18}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces 基线算法参数汇总}}{40}{table.caption.19}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces 模拟数据使用的六种核函数}}{41}{table.caption.20}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Average runtime of various algorithms on ER4\&SF4 graphs}}{43}{table.caption.23}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces DAG structures recovered from Sachs}}{47}{table.caption.28}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces 不同节点规模下的模型复杂度统计}}{61}{table.caption.36}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces 不同节点规模下的网络稀疏度统计}}{61}{table.caption.37}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces 实验指标汇总统计（60 组实验）}}{62}{table.caption.38}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces 不同噪声水平下的拟合性能对比}}{62}{table.caption.39}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces 不同节点规模下的性能对比}}{63}{table.caption.40}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Sachs实验的超参数配置}}{64}{table.caption.42}%
+\contentsfinish 

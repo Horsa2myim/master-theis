@@ -1,0 +1,275 @@
+\chapter{背景知识与理论基础概述}
+\section{因果学习基础概念}
+\subsection{贝叶斯网络与图模型}
+
+图由顶点集（或节点集）$V$ 和边集（或链接集）$E$ 组成，其中边连接顶点对。图中的顶点对应变量（因此使用相同符号 $V$），边表示变量对之间的某种关系，具体关系因应用场景而异。由边相连的两个变量称为相邻变量。
+
+\begin{definition}[马尔可夫父代变量集合]
+	\label{def马尔可夫父代变量集合}
+	设 $V = \{X_1, \dots, X_n\}$ 为有序变量集合，$P(v)$ 表示其联合概率分布。若 $PA_j$ 是 $\{X_1, \dots, X_{j-1}\}$ 中使 $X_j$ 独立于其余前驱变量的极小子集，则称 $PA_j$ 为 $X_j$ 的马尔可夫父代变量集合。换言之，$PA_j$ 满足式~\ref{eq马尔可夫父代变量集合}，且其任意真子集均不满足该式\footnote{小写字母（如 $x_j$、$pa_j$）表示对应变量（如 $X_j$、$PA_j$）的特定取值。}：
+	\begin{equation}
+		P(x_j \mid pa_j) = P(x_j \mid x_1, \dots, x_{j-1})
+		\label{eq马尔可夫父代变量集合}
+	\end{equation}
+\end{definition}
+
+定义~\ref{def马尔可夫父代变量集合} 为每个变量 $X_j$ 分配一个前驱变量集 $PA_j$，使得在已知 $PA_j$ 的取值后，其他前驱变量的信息变得冗余。这种分配可用有向无环图（DAG）表示：变量为节点，从 $PA_j$ 中各节点向 $X_j$ 引入有向边。该定义还提供了一种递归构造 DAG 的方法：
+从 $(X_1, X_2)$ 开始，若二者相关，则添加边 $X_1 \to X_2$；
+处理 $X_3$ 时，若 $X_3$ 独立于 $\{X_1, X_2\}$，则不加边；否则，检验是否存在条件独立：若 $X_2$ 使 $X_3 \perp\!\!\!\perp X_1 \mid X_2$，则加边 $X_2 \to X_3$；若 $X_1$ 使 $X_3 \perp\!\!\!\perp X_2 \mid X_1$，则加边 $X_1 \to X_3$；若无条件独立，则从 $X_1$ 和 $X_2$ 均向 $X_3$ 加边。
+一般地，在第 $j$ 步，选择 $\{X_1, \dots, X_{j-1}\}$ 中使 $X_j$ 独立于其余前驱变量的极小子集 $PA_j$，并从 $PA_j$ 中每个节点向 $X_j$ 引入有向边。最终得到的 DAG 称为贝叶斯网络，其中 $X_i \to X_j$ 表示 $X_i$ 属于 $X_j$ 的马尔可夫父代\footnote{即 $X_i$ 本身是 $X_j$ 的父节点，或存在一条从 $X_i$ 到 $X_j$ 且经过某父节点的路径。}，与定义~\ref{def马尔可夫父代变量集合} 一致。
+
+\subsection{因果贝叶斯网络}
+
+基于因果关系而非统计关联构建 DAG 模型具有两大优势。
+首先，模型构建所需的判断更具语义意义、更易理解，因而更可靠。在此范式下，条件独立性假设是表达领域知识的主要工具。若条件独立性源于因果机制，则直接建模这些机制是更自然、更可靠的知识表达方式——这正是因果贝叶斯网络的核心理念。
+
+其次，因果贝叶斯网络能有效表征外部或自发变化。环境机制的局部改变可通过微调网络结构转化为拓扑重构。这种灵活性有助于区分应变式行为体（能快速适应新情境，无需重新训练）与反应式行为体。
+
+\begin{definition}[因果贝叶斯网络]
+	\label{def因果贝叶斯网络}
+	设 $P(v)$ 为变量集 $V$ 上的观测分布，$P_x(v)$ 为对子集 $X \subseteq V$ 施加干预 $do(X=x)$ 后的分布\textsuperscript{①}。令 $\boldsymbol{P}_*$ 表示所有干预分布 $\{P_x(v) \mid X \subseteq V\}$ 的集合（包含 $P(v)$，对应 $X = \varnothing$）。有向无环图 $G$ 是与 $\boldsymbol{P}_*$ 相容的因果贝叶斯网络，当且仅当对任意 $P_x(v) \in \boldsymbol{P}_*$，以下三条件成立：
+
+	\begin{enumerate}
+		\item[(i)] $P_x(v)$ 与 $G$ 马尔可夫相容；
+		\item[(ii)] 对任意 $V_i \in X$，若 $v_i$ 与 $X = x$ 一致，则 $P_x(v_i) = 1$；
+		\item[(iii)] 对任意 $V_i \notin X$，若 $pa_i$ 与 $X = x$ 一致，则 $P_x(v_i \mid pa_i) = P(v_i \mid pa_i)$，即未受干预变量的条件概率保持不变。
+	\end{enumerate}
+\end{definition}
+
+定义~\ref{def因果贝叶斯网络} 对干预空间 $\boldsymbol{P}_*$ 施加约束，使得可用单个贝叶斯网络 $G$ 高效描述整个干预空间。该约束导出截断因子分解（Truncated Factorization）公式：对所有与 $x$ 一致的 $v$，
+\begin{equation}
+	P_x(v) = \prod_{\{i \mid V_i \notin X\}} P(v_i \mid pa_i).
+\end{equation}
+
+该公式蕴含条件 (i)–(iii)，验证了 $G$ 中“删除被干预变量父边”操作的合理性。当 $G$ 为 $\boldsymbol{P}_*$ 的因果贝叶斯网络时，以下性质成立：
+
+\begin{proposition}
+	\label{性质因果贝叶斯网络1}
+	对任意 $i$，
+	\begin{equation}
+		P(v_i \mid pa_i) = P_{pa_i}(v_i).
+	\end{equation}
+\end{proposition}
+
+\begin{proposition}
+	\label{性质因果贝叶斯网络2}
+	对任意 $i$ 及与 $\{V_i, PA_i\}$ 不相交的变量子集 $S$，
+	\begin{equation}
+		P_{pa_i, s}(v_i) = P_{pa_i}(v_i).
+	\end{equation}
+\end{proposition}
+
+性质~\ref{性质因果贝叶斯网络1} 表明，$PA_i$ 与 $V_i$ 满足外生性（exogeneity）：条件概率 $P(v_i \mid pa_i)$ 等价于将 $PA_i$ 外部设为 $pa_i$ 时对 $V_i$ 的因果效应。性质~\ref{性质因果贝叶斯网络2} 体现不变性：一旦控制 $V_i$ 的直接原因 $PA_i$，其他干预不再影响 $V_i$。
+
+\subsection{函数因果模型}
+
+函数因果模型由如下方程组定义：
+\begin{equation}
+	\label{eq结构方程}
+	x_i = f_i(pa_i, u_i), \quad i=1,\dots,n,
+\end{equation}
+其中 $pa_i$ 为直接决定 $X_i$ 的父变量，$U_i$ 为遗漏因子引起的扰动（或误差）。式~\ref{eq结构方程} 是线性结构方程模型（SEM）的非线性、非参数扩展：
+\begin{equation}
+	\label{eq线性结构方程}
+	x_i = \sum_{k \ne i} \alpha_{ik} x_k + u_i, \quad i=1,\dots,n.
+\end{equation}
+
+结构方程模型广泛应用于经济学与社会科学。在线性模型中，$pa_i$ 对应式~\ref{eq线性结构方程} 中系数非零的变量。式~\ref{eq结构方程} 中的函数关系采用自然科学中的标准解释：它是一种“配方”或“法则”，规定对每组 $(PA_i, U_i)$，大自然如何确定 $X_i$ 的值。此类方程组（每方程代表一个自治机制）称为结构模型；若每个变量在左侧唯一出现，则称为结构因果模型（Structural Causal Model, SCM）或简称因果模型。数学上，结构方程不同于代数方程：其含义在代数运算（如移项）下不保持不变。
+
+\subsection{可识别性}
+\label{sec:identifiability}
+
+在因果推断与贝叶斯网络学习中，可识别性指：给定观测数据的联合分布 $P(V)$，能否唯一确定底层因果结构（即 DAG $G$）或其关键部分（如边方向、父代集）。若多个不同 DAG 生成相同的 $P(V)$，则该结构不可识别；若仅有一个 DAG 与 $P(V)$ 相容，则可识别。
+
+\begin{definition}[可识别性]
+	设 $\mathcal{M}$ 为某类因果模型（如线性高斯模型、加性噪声模型），$\mathcal{G}$ 为所有可能 DAG 的集合。若对任意 $G_1 \ne G_2 \in \mathcal{G}$，只要 $M_1 = \langle G_1, \theta_1 \rangle$ 和 $M_2 = \langle G_2, \theta_2 \rangle$ 均属于 $\mathcal{M}$，就有
+	\[
+	P_{M_1}(V) \neq P_{M_2}(V),
+	\]
+	则称因果图在模型类 $\mathcal{M}$ 下可识别。
+\end{definition}
+
+仅用观测数据时，经典结果表明：在一般参数假设下（如线性高斯 SEM），DAG 通常不可识别至单图，而仅能识别至其马尔可夫等价类——即具有相同骨架和相同 $v$-结构的所有 DAG 的集合。
+
+然而，施加更强的结构性假设可恢复可识别性。特别地，在非参数模型中，放弃对函数形式或噪声分布的强限制，反而可能获得更强识别能力。
+
+\begin{definition}[非参数模型的可识别性]
+	考虑函数因果模型（式~\ref{eq结构方程}）：
+	\[
+	X_i = f_i(PA_i, U_i), \quad i=1,\dots,n,
+	\]
+	其中 $f_i$ 为任意可测函数，$U_i$ 为相互独立的外生噪声，且不假设 $f_i$ 线性或 $U_i$ 高斯。若在此类模型中，$P(V)$ 能唯一确定 DAG $G$ 的结构（包括所有边方向），则称该非参数因果模型具有可识别性。
+\end{definition}
+
+若干非参数设定下可实现完全可识别：
+
+\begin{itemize}
+	\item 加性噪声模型（ANM）：若 $X_i = f_i(PA_i) + U_i$，$U_i \perp\!\!\!\perp PA_i$，且至少一个 $f_i$ 非线性或一个 $U_i$ 非高斯，则 DAG 几乎处处可识别\cite{Hoyer2008,Peters2014}；
+	\item 后非线性模型（PNL）：若 $X_i = h_i(f_i(PA_i) + U_i)$，其中 $h_i$ 可逆非线性，且噪声独立，则可识别；
+	\item 线性非高斯模型（LiNGAM）：在线性结构下，若所有 $U_i$ 相互独立且非高斯，则 DAG 可唯一识别\cite{Shimizu2006}。
+\end{itemize}
+
+这些结果的核心在于：独立噪声与非高斯性/非线性破坏了模型对称性。在线性高斯情形中，反向模型可通过参数调整拟合同一联合分布，导致方向不可识别；而在非高斯或非线性设定中，仅正确因果方向能满足噪声与原因的独立性。
+
+因此，非参数模型的可识别性并非源于简化，而是源于对真实数据生成机制（常具非线性、非高斯扰动）的更准确刻画——这些特性恰为因果方向识别提供信息。
+
+值得注意的是，可识别性通常在“几乎处处”（almost everywhere）意义下成立，即除勒贝格测度为零的参数集外，所有参数配置均支持唯一识别。这意味着，只要数据真实来自此类非参数模型，因果发现算法有望恢复真实 DAG。
+
+综上，可识别性是连接观测数据与因果结构的桥梁。在缺乏干预实验时，通过引入合理非参数假设（如独立噪声、非线性、非高斯性），可在纯观测数据下突破马尔可夫等价类限制，实现因果方向的唯一识别。这一理论为现代因果发现算法（如基于 ANM、LiNGAM 或连续优化的方法）提供了合法性基础。
+
+\section{因果发现基础概念}
+\subsection{因果发现框架}
+
+因果发现可视为人类对客观世界的归纳过程。客观世界具有稳定的因果机制，在微观层面表现为变量间的确定性函数关系（部分变量不可观测），并以无环结构组织。人类试图从观测数据中识别此结构。
+
+\begin{definition}[因果结构\cite{Pearl2009}]
+	变量集 $V$ 的因果结构是一个有向无环图（DAG），其中节点对应 $V$ 中的变量，边表示变量间的直接函数关系。
+\end{definition}
+
+因果结构可作为构建因果模型的蓝图，精确描述 DAG 中各变量如何受其父代影响（如式~\ref{eq结构方程} 的结构方程模型）。我们假定：客观世界在结果与其原因间施加任意函数关系，并通过相互独立的随机扰动 $U_i$（服从未知概率分布 $P(u_i)$）反映不可观测条件的影响。
+
+\begin{definition}[因果模型]
+	因果模型为 $M = \langle D, \Theta_D \rangle$，其中 $D$ 为因果结构（DAG），$\Theta_D$ 为相容参数集。$\Theta_D$ 为每个变量 $X_i \in V$ 指定函数 $x_i = f_i(pa_i, u_i)$ 及扰动分布 $P(u_i)$，其中 $pa_i$ 为 $D$ 中 $X_i$ 的父代，$U_i$ 相互独立。
+\end{definition}
+
+“独立扰动”假设确保模型满足马尔可夫性：以父代为条件，每个变量独立于其所有非后代。马尔可夫假设的普遍性可能反映了人类对有效模型粒度的认知——在微观确定性世界中，马尔可夫条件自然成立；在宏观抽象中，合并变量并引入概率表示遗漏因素时，需保留此性质。若父代集 $PA_i$ 过小，导致扰动同时影响多变量，则马尔可夫性丧失，此类扰动应视为潜变量。若在图中显式加入潜变量节点，马尔可夫性仍成立\footnote{马尔可夫性是因果关系的本质属性，任何抽象描述必须在保持该性质的前提下进行；否则，因果讨论失去意义。}。
+
+给定因果模型 $M$，可导出变量联合分布 $P(M)$，其满足因果结构的性质（如以父代为条件，变量独立于其祖代）。研究者仅能观测子集 $O \subseteq V$，并基于 $P_{[O]}$ 推断潜在 DAG $D$\footnote{此描述含理想化假设：如科学家直接获知分布而非样本；观测变量确为原始模型中的变量，而非聚合量（聚合可能导致反馈回路）。}。
+
+\begin{definition}[极小性]
+	潜在结构 $L$ 相对于结构类 $\mathcal{L}$ 是极小的，当且仅当 $\mathcal{L}$ 中不存在严格优于 $L$ 的结构，即对任意 $L' \in \mathcal{L}$，若 $L' \preceq L$，则 $L \equiv L'$。
+\end{definition}
+
+\begin{definition}[稳定性]
+	令 $I(P)$ 为 $P$ 中所有条件独立关系的集合。若因果模型 $M = \langle D, \Theta_D \rangle$ 满足：对任意参数 $\Theta_D'$，均有 $I(P(\langle D, \Theta_D \rangle)) \subseteq I(P(\langle D, \Theta_D' \rangle))$，则称其生成稳定分布。
+\end{definition}
+
+稳定性表明：参数变动不会破坏 $P$ 中的独立性。简言之，若 $P$ 与 $M$ 的结构 $D$ “匹配”，即对任意变量集 $X,Y,Z$，有 $(X \perp\!\!\!\perp Y \mid Z)_P \Leftrightarrow (X \perp\!\!\!\perp Y \mid Z)_D$，则 $P$ 为 $M$ 的稳定分布。
+
+在无隐藏变量且满足稳定性时，每个分布对应唯一的极小因果结构（由 $d$-分离等价类决定）。
+
+\subsection{连续优化因果发现算法框架}
+
+传统方法（如 PC、GES、IC）依赖条件独立性检验与组合搜索，在高维场景下面临计算复杂、统计功效低、难以端到端训练等问题。近年，连续优化因果发现框架将离散 DAG 搜索转化为可微连续优化问题，充分利用梯度下降与深度学习基础设施。
+
+核心思想：将 DAG 邻接矩阵 $W \in \mathbb{R}^{d \times d}$ 视为连续变量，并通过可微无环性约束 $h(W) = 0$ 强制图结构无环。因果发现任务形式化为：
+\begin{equation}
+	\min_{W \in \mathbb{R}^{d \times d}} \ \mathcal{L}(W) \quad \text{subject to} \quad h(W) = 0,
+	\label{eq:cont_opt_general}
+\end{equation}
+其中 $\mathcal{L}(W)$ 为数据拟合损失（如负对数似然），$h(W) = 0$ 为无环约束。
+
+NOTEARS\cite{Zheng2018} 首次提出精确可微的无环性刻画：
+
+\begin{theorem}[无环性的矩阵指数刻画]
+	设 $W \in \mathbb{R}^{d \times d}$ 为加权邻接矩阵（$W_{ij} \neq 0$ 表示边 $X_j \to X_i$），定义 $(W \circ W)_{ij} = W_{ij}^2$。则 $W$ 对应 DAG 当且仅当
+	\begin{equation}
+		h(W) := \mathrm{tr}\left(e^{W \circ W}\right) - d = 0.
+		\label{eq:h_W}
+	\end{equation}
+\end{theorem}
+
+$h(W)$ 具有以下性质：
+\begin{itemize}
+	\item $h(W) \geq 0$，且 $h(W) = 0$ 当且仅当图无环；
+	\item $h(W)$ 光滑可微，梯度可高效计算。
+\end{itemize}
+
+在线性高斯 SEM（$X = W^\top X + N$, $N \sim \mathcal{N}(0, \sigma^2 I)$）下，损失函数为：
+\[
+\mathcal{L}(W) = \frac{1}{2n} \|X - XW\|_F^2 + \lambda \|W\|_1,
+\]
+其中 $\|\cdot\|_F$ 为 Frobenius 范数，$\|W\|_1$ 为 $\ell_1$ 正则项以促进稀疏。NOTEARS 采用增广拉格朗日法求解：
+\[
+\min_W \ \mathcal{L}(W) + \frac{\rho}{2} |h(W)|^2 + \alpha h(W).
+\]
+
+该方法避免离散搜索，支持 GPU 加速，显著提升高维（$d \sim 100$）可扩展性。
+
+基于增广拉格朗日法，NOTEARS 及后续工作通常采用以下迭代流程：算法~\ref{alg:notears} 将组合约束 $h(W)=0$ 转化为一系列无约束子问题。每轮迭代中，优化器在平滑目标上执行梯度更新，拉格朗日机制确保最终解满足无环性。实践中常设 $\epsilon = 10^{-8}$ 以保证数值无环。
+
+\begin{algorithm}[htbp]
+	\caption{基于连续优化的 DAG 学习框架（以 NOTEARS 为例）}
+	\label{alg:notears}
+	\begin{algorithmic}[1]
+		\REQUIRE 观测数据 $X \in \mathbb{R}^{n \times d}$，正则化系数 $\lambda > 0$，初始惩罚参数 $\rho_0 > 0$，乘子更新率 $\eta > 1$，容差 $\epsilon > 0$
+		\ENSURE 估计的邻接矩阵 $\hat{W}$
+		\STATE 初始化 $W^{(0)} \gets 0_{d \times d}$, $\alpha^{(0)} \gets 0$, $\rho \gets \rho_0$, $k \gets 0$
+		\WHILE{$h(W^{(k)}) > \epsilon$}
+		\STATE \textbf{步骤1：固定 $\alpha^{(k)}, \rho$，求解子问题}
+		\[
+		W^{(k+1)} \gets \arg\min_{W} \ \mathcal{L}(W) + \frac{\rho}{2} \left| h(W) + \frac{\alpha^{(k)}}{\rho} \right|^2
+		\]
+		使用梯度下降、L-BFGS 或 Adam 等优化器
+
+		\STATE \textbf{步骤2：更新拉格朗日乘子}
+		\[
+		\alpha^{(k+1)} \gets \alpha^{(k)} + \rho \cdot h(W^{(k+1)})
+		\]
+
+		\STATE \textbf{步骤3：若约束未充分减小，增大惩罚项}
+		\IF{$h(W^{(k+1)}) > \gamma \cdot h(W^{(k)})$}
+		\STATE $\rho \gets \eta \cdot \rho$
+		\ENDIF
+
+		\STATE $k \gets k + 1$
+		\ENDWHILE
+		\STATE 对 $W^{(k)}$ 阈值处理：$\hat{W}_{ij} = \begin{cases}
+			W^{(k)}_{ij}, & |W^{(k)}_{ij}| > \tau \\
+			0, & \text{otherwise}
+		\end{cases}$ （可选）
+		\STATE \textbf{return} $\hat{W}$
+	\end{algorithmic}
+\end{algorithm}
+
+该框架高度模块化，可通过替换以下组件适配不同场景：
+\begin{itemize}
+	\item \textbf{损失函数 $\mathcal{L}(W)$}：
+	\begin{itemize}
+		\item 线性模型：$\frac{1}{2n}\|X - XW\|_F^2 + \lambda \|W\|_1$（NOTEARS）
+		\item 非线性模型：$\sum_{i=1}^d \mathbb{E}[\log p(x_i \mid f_i(x_{\text{pa}_i}; \theta_i))]$
+	\end{itemize}
+	\item \textbf{无环约束 $h(W)$}：
+	\begin{itemize}
+		\item NOTEARS：$h(W) = \mathrm{tr}(e^{W \circ W}) - d$
+		\item DAGMA：$h(W) = -\log \det (2I - W \circ W - (W \circ W)^\top) + d \log 2$
+		\item 谱半径近似：$h(W) = \sigma_{\max}(W \circ W) - 1 + \delta$（需平滑处理）
+	\end{itemize}
+	\item \textbf{优化器}：L-BFGS（低维）、Adam（高维/非凸）、共轭梯度等。
+\end{itemize}
+
+\section{Kolmogorov-Arnold表示定理驱动的神经网络}
+
+多层感知机（MLP）的表达能力由通用逼近定理保证，但其黑箱特性阻碍了符号规律的发现，限制了在科学发现等需可解释性场景的应用。近期研究重新审视经典数学中的 Kolmogorov–Arnold 表示定理（KAT），并据此提出 Kolmogorov–Arnold 网络（KANs）\cite{Liu2025}。
+
+\begin{theorem}[Kolmogorov–Arnold 表示定理]
+	对任意连续函数 $f: [0,1]^n \to \mathbb{R}$，存在一元连续函数族 $\{\phi_{q,p}\}_{q=1,\dots,2n+1; p=1,\dots,n}$ 和 $\{\Phi_q\}_{q=1,\dots,2n+1}$，使得
+	\begin{equation}
+		f(x_1, \dots, x_n) = \sum_{q=1}^{2n+1} \Phi_q \left( \sum_{p=1}^n \phi_{q,p}(x_p) \right).
+		\label{eq:ka_theorem}
+	\end{equation}
+\end{theorem}
+
+该定理表明：任意多元连续函数均可分解为有限个一元函数的叠加与求和。换言之，除加法外，自然界不存在真正的“多元函数”——所有复杂性均可归约为一元函数的组合。
+
+深度为 $L$、形状为 $[n_0, n_1, \dots, n_L]$ 的 KAN 定义如下：
+- 第 $l$ 层有 $n_l$ 个节点，记第 $l$ 层第 $i$ 个节点的激活值为 $x_{l,i}$；
+- 连接 $(l,i)$ 与 $(l+1,j)$ 的边对应可学习一元函数 $\phi_{l,j,i}: \mathbb{R} \to \mathbb{R}$；
+- 前向传播规则为：
+\begin{equation}
+	x_{l+1,j} = \sum_{i=1}^{n_l} \phi_{l,j,i}(x_{l,i}), \quad j=1,\dots,n_{l+1}.
+	\label{eq:kan_forward}
+\end{equation}
+
+每个 $\phi_{l,j,i}$ 通常以 B-样条参数化：
+\[
+\phi_{l,j,i}(x) = w_b \cdot b(x) + w_s \cdot \sum_{k} c_k B_k(x),
+\]
+其中 $b(x)$ 为基函数（如 SiLU），$B_k(x)$ 为 B-样条基，$c_k$ 为可学习系数。该参数化兼顾光滑性，并支持通过网格细化动态提升精度。
+
+基于上述理论基础，柯尔莫哥洛夫-阿诺德网络（Kolmogorov-Arnold Networks，KAN）\cite{Ziming2025}在多个领域取得了显著进展。总的来说，当前研究主要关注激活函数、模型架构和应用层面的创新三个方面。
+从激活函数的角度来看，Chebyshev KAN\cite{SS2024}用切比雪夫多项式替代B样条，提升逼近精度与效率，适配非线性成像、岩土力学分析；Wav-KAN\cite{Bozorgasl2024}融合小波函数，强化高低频特征捕捉，提升含噪声数据处理的精度与稳健性；PointNet-KAN\cite{Kashefi2024}替换PointNet的MLP层为KAN，在点云分类/分割任务保持性能，增强小样本适应性；rKAN\cite{Aghaei2024}利用有理函数基替代B样条，强化非线性拟合；ReLU-KAN\cite{Qiu2024}将ReLU替代B样条，降低复杂度、解决灾难性遗忘；SineKAN\cite{Reinhardt2025}使用正弦激活替代B样条，提升训练速度（快9倍）与可扩展性；UKAN\cite{Moradzadeh2024}融合MLP架构，实现GPU高效部署，降低时间复杂度；HRKANs\cite{So2024}使用高阶ReLU激活，优化PINN求解精度与收敛速度；S-KAN\cite{Yang2024}和S-ConvKAN\cite{Yang2024}类似，利用激活函数池自适应选择提升通用视觉任务适配性。激活函数的变化对精度、稳定性、复杂度以及多任务适配等方面有积极的影响。
+从模型架构的角度出发，KAT\cite{Yang2025}替换Transformer的MLP层为KAN，增强复杂特征表征，提升视觉任务性能；KAMoE\cite{So2024}基于GRKAN构建混合专家框架，通过门控机制适配多任务，提升通用性与效率。稳健性与泛化性是衡量神经网络实际应用价值的关键指标，Alter等人\cite{alter2025}测试了KAN在对抗条件下的鲁棒性，尤其强调图像分类任务。经过实验，他们声称在可行的更大模型且鲁棒性至关重要的场景中，KAN 可能特别有效。
+此外，KAN还被应用到了多个不同的层面。在地理信息科学领域中，基于KAN的KCN模型应用于基流识别、卫星图像分类任务\cite{Liu2025}；在计算机视觉领域中，TaylorKAN模型\cite{Yu2024}用于图像质量评估任务，拓展KAN在视觉评价体系中的应用；在医学影像领域中，KAN应用于CEST MRI数据分析，其拟合参数外推性能优于传统MLP模型\cite{Wang2025a}。
+
+相较于传统神经网络（如MLP）或其他函数逼近器，Kolmogorov-Arnold Networks在因果函数建模方面展现出独特而关键的优势，使其成为实现可解释、可干预函数因果模型（FCM）的理想求解器。首先，KAN的结构天然契合因果机制的稀疏性与可分解性：根据Kolmogorov-Arnold表示定理，任意多元连续因果函数均可精确分解为有限个单变量函数的叠加与复合，这与真实世界中“每个结果变量通常仅由少数原因变量通过特定非线性机制共同作用”的因果生成假设高度一致；而传统MLP通过稠密连接和点乘操作隐式编码输入交互，难以显式揭示哪些变量参与了因果作用以及作用的具体形式。其次，KAN具备内生的符号化与可解释性能力：其边上的可学习单变量函数可通过稀疏正则化自动退化为零或简化为低阶解析表达式，从而直接输出人类可读的因果函数表达式，这不仅超越了DAG-GNN、GranDAG等黑箱神经网络方法仅能提供“存在因果边”，但无法解释“如何影响”的局限 \cite{Yu2019, Lachapelle2020}，也弥补了NO TEARS+等非参数方法虽能拟合非线性但缺乏符号语义的不足 \cite{Zheng2020a}。更重要的是，KAN支持精确的干预与反事实计算：一旦学习到符号化的因果函数，即可直接代入干预值 $do(X_i = x')$ 进行前向传播以预测结果，或重构反事实世界中的潜在结果，无需依赖复杂的重训练或近似推断，显著提升了因果模型在决策支持场景中的实用性。

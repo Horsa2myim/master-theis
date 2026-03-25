@@ -1,0 +1,596 @@
+\chapter{基于KAN的连续优化因果发现方法研究}
+基于被动观测数据的因果发现是复杂系统建模与数据驱动决策的核心环节，其在医学、经济学、社会科学及人工智能等多个领域具有广泛的应用价值。近年来，随着因果发现理论的发展，基于连续优化的因果发现方法在结构识别精度方面取得了显著进展，有效提升了有向无环图（DAG）的学习效率。然而，现有方法仍存在两方面的关键局限：其一，这类方法通常聚焦于推断变量间是否存在因果关系，却难以进一步揭示因果机制中变量间的具体交互模式，如非线性效应、中介效应、调节效应等深层结构信息；其二，在处理具有加性噪声假设的结构方程模型时，尤其在高维场景下，现有方法在因果方向识别和函数拟合能力上存在明显退化，限制了其在实际复杂系统中的应用。为应对上述挑战，本文提出一种连续优化因果发现方法\pozhehao{}基于KAN的因果发现方法（\textbf{D}irected \textbf{A}cyclic \textbf{G}raph learning via \textbf{K}olmogorov-\textbf{A}rnold \textbf{N}etwork，DAG-KAN）。与依赖多层感知机（MLP）或多项式基函数的传统方法不同，DAG-KAN通过将DAG结构学习与基于Kolmogorov-Arnold表示定理的因果函数映射相结合，实现了图结构与函数关系的联合建模。其中，因果机制被建模为可学习的KAN网络，该网络具备数学透明性强、参数效率高、可解释性好的特点，能够以更为紧凑的形式表达复杂的非线性因果关系。我们在多个合成数据集（包括线性和非线性因果模型）以及真实世界数据集上对所提方法进行了系统评估。实验结果表明，DAG-KAN不仅在标准因果图结构恢复任务中优于现有主流方法，在高维、复杂因果场景下也展现出更强的鲁棒性和泛化能力。更为重要的是，DAG-KAN所学习到的KAN映射能够清晰展示变量间的函数依赖形式，从而为因果机制的可解释分析提供了数学依据。
+
+\section{引言}
+
+自2018年以来，基于连续优化的因果发现方法首次提出并引发了众多因果领域学者的深入研究。基于连续优化的方法将因果发现问题从离散组合问题转化为连续优化问题，在目标函数最小化的极限下返回有向无环图（DAG）。该方法采用通用优化框架，不受特定参数化模型（如加性或线性模型）限制，可通过通用优化方法求解，并且在准确度（结构汉明距离）上取得了领先的结果。然而，该方法仍存在以下两项不足：
+
+第一，基于连续优化的因果发现方法仅能识别变量间因果关系的存在性，却无法揭示因果变量间的行动规律（如函数映射），换言之，该方法局限于识别因果图模型，而忽视了结构因果模型中映射的重要性。如图\ref{fig:1a_intro}所示，在医疗决策场景中，理解药物剂量($X$)与血压下降值($Y$)之间的具体映射关系至关重要，这表明盲目增加药物剂量反而会适得其反。掌握$f\left( X \right)$以确定最佳药物剂量对精准医疗具有重要意义。传统方法无法揭示作用规律的原因在于：它们采用“黑箱”神经网络作为优化问题的求解器。这类网络的全局耦合特性与因果关系可分解性的需求存在根本冲突。第二，在处理加性结构方程模型时（尤其在高维环境中），基于连续优化的因果发现方法的鲁棒性不足，当输入具有高维特征、稠密因果图的观测数据时，该方法的效果显著下降，甚至失效。
+\begin{figure}[htbp] % use float package if you want it here
+	\centering
+	\includegraphics[width=3in]{1a-intro}
+	\caption{药物剂量和血压下降值之间的映射因果示意图}
+	\label{fig:1a_intro}
+\end{figure}
+
+为应对上述挑战，我们提出通过柯尔莫哥洛夫-阿诺尔德网络学习有向无环图（DAG-KAN）。DAG-KAN旨在实现因果函数映射（CFM）与DAG的联合学习。DAG揭示变量间的因果关系存在，而CFM揭示因果变量间的行动规律，这对支持人类决策至关重要。具体而言，实现DAG-KAN面临以下挑战：(1) 如何构建适于因果发现的KAN结构?该结构可采用何种参数化模型实现因果发现？为何此结构能支持CFM与DAG的联合学习？(2) 如何将基于连续优化的因果发现算法适配KAN求解器。为此我们提出两项创新思路：(1) 构建轻量级KAN模块进行显式函数学习，该模块仅含单层可学习激活函数，可快速发现加性模型中的因果关系。从优化角度看，我们阐明KAN在最小化目标函数的过程中同时学习DAG和CMFs。(2) 将KAN求解器融入连续优化因果发现算法所需的调整包含两个核心组件：构建KAN的节点独立矩阵，以及推导KAN的L1正则化。
+
+提高因果发现的准确性固然必要，但本研究旨在将因果发现的焦点从准确性转向因果映射。这使得我们试图解决的因果发现问题在实际应用中更具相关性和价值。如前所述，因果映射是因果发现的重要组成部分。DAG-KAN的引入将为生物医学、金融和社交媒体等领域提供一种新的工具，用于进行因果发现和探索因果映射。在实验部分，本文不仅对模拟加性模型进行了大量实验，还基于真实数据集开展了验证。实验结果充分验证了DAG-KAN的卓越性能。作为基于连续优化的因果发现方法，DAG-KAN在多个维度上超越了现有最先进方法。综上所述，本章节的贡献概括如下三点：
+
+\begin{compactenum}
+	\item 本文提出一种基于KAN的创新性连续优化因果发现方法，旨在通过联合学习有向无环图（DAG）与条件互斥矩阵（CMFs）揭示深层因果关系。
+	\item 作为求解器，本文构建了轻量级KAN架构，其特点在于采用KAN的条件独立矩阵表示法及高效正则化方法。前者确保计算效率，后者保障结果的无环性和准确性。
+	\item 本文在合成数据集及公开的Sachs数据集上开展全面评估，验证了该方法在联合学习DAG与CMFs方面的有效性。其在DAG学习中显著优于其他基线方法，尤其在高维复杂场景下表现突出。
+\end{compactenum}
+
+
+\section{模型框架}
+为实现因果结构与函数映射的端到端联合学习，本节构建 DAG-KAN 的完整模型框架。该框架以轻量级 KAN 为核心求解器，通过 B 样条基函数显式拟合非线性因果机制，同时适配连续优化因果发现的无环性与稀疏性要求。首先设计单层 KAN 架构，明确其参数化形式与函数映射等价性；其次基于偏导数推导节点独立性矩阵，建立参数稀疏性与因果边存在性的对应关系；进而提出稀疏 L1 正则化策略，实现因果边的自动剪枝；最后整合上述组件形成完整算法流程，确保模型在学习因果结构的同时，精准捕获变量间的定量作用规律。
+
+\subsection{轻量的KAN求解器架构}\label{3.2.1}
+求解器KAN的网络结构如图~\ref{2layer-structure}所示。设$x=\left( x_1,x_2,...,x_d \right) $为输入，$C\in \mathbb{R} ^{d\times d\times \left( g+k \right)}$为训练参数，$\phi:\mathbb{R} \rightarrow \mathbb{R} $为可学习激活函数，则求解器KAN定义如下：
+\begin{equation}
+	\begin{aligned}
+		\mathrm{KAN}\left( x,\mathcal{C} \right) &=\left( \sum_{i=1}^{\mathrm{d}}{\phi _{1,i}\left( x_i \right)}+b_1,...,\sum_{i=1}^{\mathrm{d}}{\phi _{d,i}\left( x_i \right)}+b_d \right) \\
+		&=\left( \sum_{i=1}^{\mathrm{d}}{\sum_{q=0}^{g+\mathrm{k}}{C_{1,i,q}B_q\left( x_i \right)}+b_1,}...,\sum_{i=1}^{\mathrm{d}}{\sum_{q=0}^{g+\mathrm{k}}{C_{d,i,q}B_q\left( x_i \right)}}+b_d \right)
+	\end{aligned}\label{eq4-1}
+\end{equation}
+\noindent 其中 $B\left(\cdot \right) $ 是B样条基函数变换函数，$\phi \left( x_k \right) $ 是可学习的激活函数，该函数依赖于B样条函数实现其具体形式，B样条函数的网格数为 $g$，基函数的阶数为 $k$。输出通过求和 $\phi \left( x_k \right) $ 获得。参数$C_{j,i,q}$表示第$i$个输入变量对第$j$个输出变量的因果贡献中，第$q$个基函数的权重。若$C_{j,i,q}\equiv0$对所有$q$成立，则说明输入$x_i$对输出$x_j$无因果边，对应因果图中节点$i$到$j$无边存在。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth]{2layer-structure.pdf}
+	\caption{KAN求解器的结构}
+	\label{2layer-structure}
+\end{figure}
+
+B样条函数通过改变样条基函数的系数$C\in \mathbb{R} ^{d\times d\times \left( g+k \right)}$，能够灵活拟合各类平滑函数，同时通过控制网格数$g$和阶数$k$来调节拟合函数曲线的精细程度。
+
+\begin{theorem}[函数映射的等价性]\label{prop:equiv}
+	令 $\mathcal{F}_1$ 表示加性结构方程模型中因果函数映射的类，$\mathcal{F}_2$ 表示DAG-KAN所学习的映射类。在以下条件下：
+	\begin{itemize}
+		\item B样条基函数 $B(\cdot)$ 具有足够的网格分辨率 $g \geq g_0$ 且阶数 $k \geq 3$
+		\item 正则化参数 $\lambda$ 满足 $0 < \lambda < \lambda_{\max}$
+		\item 训练收敛至 $\epsilon \to 0$ 时 $\ell(\text{KAN}(X,C), X) < \epsilon$
+	\end{itemize}
+	那么这些经过学习的功能映射便能精确地重建因果机制：
+	\begin{equation}
+		\mathcal{F}_1 = \mathcal{F}_2
+	\end{equation}
+\end{theorem}
+
+\begin{proof}
+	等价性通过集合相互包含$\mathcal{F}_2 \subseteq \mathcal{F}_1$且$\mathcal{F}_1 \subseteq \mathcal{F}_2$严格证明：
+	\begin{itemize}
+		\item $\boldsymbol{\mathcal{F}_{2}\subseteq\mathcal{F}_{1}}$：根据DAG-KAN构造，每个输出分支均实现加性分解：
+		\[
+		f_j(X) = \sum_{i=1}^{d} \phi_{ji}(X_i) + b_j,
+		\]
+		其中单变量激活项满足$\phi_{ji}(X_i) = \sum_{q=0}^{g+k} C_{j,i,q} B_q(X_i)$，与加性结构方程模型（SEM）的函数形式完全一致。因此$\mathcal{F}_{2}$中任意映射均属于$\mathcal{F}_{1}$。
+		
+		\item $\boldsymbol{\mathcal{F}_{1}\subseteq\mathcal{F}_{2}}$：对任意$f_j \in \mathcal{F}_{1}$，由B样条通用逼近定理，存在系数序列$\{C_{j,i,q}\}$使得
+		\[
+		\sup_{X_i \in \mathcal{X}} |\phi_{ji}(X_i) - f_{ji}(X_i)| < \delta, \quad \forall \delta > 0.
+		\]
+		结合式\eqref{eq4-4}的$L_1$稀疏正则化，非因果边对应系数会被强制置零；同时重建损失$\ell(\cdot)$驱动逼近误差$\delta \rightarrow 0$。因此$\mathcal{F}_{1}$中任意映射均可由DAG-KAN表示，即$\mathcal{F}_{1} \subseteq \mathcal{F}_{2}$。
+	\end{itemize}
+	综上双向包含关系成立，故$\mathcal{F}_{1} = \mathcal{F}_{2}$。
+\end{proof}
+
+证明从集合包含关系的双向性出发，明确了DAG-KAN学习的映射与加性结构方程模型中因果函数映射的完全等价性，既验证了DAG-KAN的结构与加性SEM的一致性，也借助B样条的逼近能力和稀疏正则化的约束作用，确保了DAG-KAN能够精准表示所有真实因果映射。同时，该理论保证确保DAG-KAN架构具备足够能力，可在加性模型中表示任意因果机制。
+从模型整体设计来看，这一等价性结论为DAG-KAN联合学习因果图与非线性因果函数提供了理论依据，保证了网络在优化过程中不会偏离真实的因果生成机制。在实验层面，该结论为网络结构设计、超参数选取（如B样条网格数、正则化强度）提供了明确指导，使得在仿真数据集与真实数据集上训练时，能够有效避免因模型表达能力不足导致的因果结构误判与函数拟合偏差，提升因果图恢复的准确率与函数重建的稳定性。
+
+\subsection{条件独立性矩阵构建}
+基于连续优化问题的因果发现研究中，无环约束是一个重要对象，而无环约束的确定依赖于描述节点独立性的矩阵$W\left( f \right) $。从图论视角看，$W\left( f \right) $编码了一种图结构：当$W\left( f \right) _{ij}=0$时，$f_j$与$x_i$之间的依赖关系被切断，即节点$x_i$与节点$x_j$之间不存在边。
+
+采用偏导数建立$f_j$与节点$x_k$的独立性是有效的。节点独立性矩阵中每个元素定义为 $W\left( f \right) _{ij}:=\left\| \partial _if_j \right\| _{L^2}$，即：首先建立输入节点 $\boldsymbol{x}=\left( x_1,..., x_i,...,x_d \right)$ 计算输出 $f_j$ 与输入节点 $x_k$ 之间的关系 $\partial _kf_j$，最后求取 $\partial _kf_j$ 中所有元素的欧几里得范数。
+
+对第$j$个输出分支，KAN展开为：
+\begin{equation}
+	f_j=\sum_{i=1}^{\mathrm{d}}{\phi _i\left( x_i \right) +b_j=\sum_{i=1}^{\mathrm{d}}{\sum_{q=0}^{g+\mathrm{k}}{C_{j,i,q}B_q\left( x_i \right)}}}+b_j,
+	\quad
+	C_j\in \mathbb{R} ^{d\times \left( g+k \right)}
+	\label{eq4-2}
+\end{equation}
+
+对$x_k$求偏导可得：
+\[
+\partial_k f_j = \sum_{q=0}^{g+k} C_{j,k,q} \cdot B_q'(x_k)
+\]
+其范数与系数向量$\mathcal{C}_{j,k,:}$的范数成比例，即$\|\partial_k f_j\|_{L^2} \propto \|\mathcal{C}_{j,k,:}\|_2$。
+
+事实上，下列命题揭示了独立于$x_k$的$\mathrm{KAN}$集合：
+\begin{theorem}[KAN的节点独立性准则]
+	设 $\mathcal{F}_1$ 表示所有独立于输入变量 $x_k$ 的 KAN 集合，$\mathcal{F}_0$ 表示所有系数矩阵 $\mathcal{C}$ 中第$j$行第$i$列通道$\mathcal{C}_{j,i,:}$为全零向量的 KAN 集合。则一个 KAN 属于 $\mathcal{F}_1$ \textit{当且仅当} 它属于 $\mathcal{F}_0$。形式化表达如下：
+	$$
+	f_j \in \mathcal{F}_1 \iff \mathcal{C}_{j,i,:} = \mathbf{0},
+	$$
+	其中 $\mathcal{C}_{j,i,:}$ 表示参数张量在输出$j$、输入$i$位置上的全部基函数权重构成的向量。
+	\label{proposition2}
+\end{theorem}
+
+\begin{proof}
+	分别证明$\mathcal{F}_0 \subseteq \mathcal{F}_1$与$\mathcal{F}_1 \subseteq \mathcal{F}_0$。
+	
+	\noindent(1) $\boldsymbol{\mathcal{F}_0 \subseteq \mathcal{F}_1}$：
+	对任意$f_j \in \mathcal{F}_0$，由定义$\mathcal{C}_{j,i,:} = \mathbf{0}$，代入式\eqref{eq4-2}可知$f_j$中不含$x_i$相关项，故$f_j$与$x_i$统计独立，即$f_j \in \mathcal{F}_1$。
+	
+	\noindent(2) $\boldsymbol{\mathcal{F}_1 \subseteq \mathcal{F}_0}$：
+	取任意$f_j \in \mathcal{F}_1$，其与$x_i$无关。构造向量$\tilde{x}$满足$\tilde{x}_i = 0$，$\tilde{x}_{i'} = x_{i'}$（$i' \neq i$），由独立性：
+	\begin{align}\label{eqn:kan_indep}
+		f_j(x) = f_j(\tilde{x}) = \mathrm{KAN}(\tilde{x};\mathcal{C}).
+	\end{align}
+	构造修正系数张量$\tilde{\mathcal{C}}$，满足
+	$$
+	\tilde{\mathcal{C}}_{j,i,:} = \mathbf{0}, \quad \tilde{\mathcal{C}}_{j,i',:} = \mathcal{C}_{j,i',:},\ \forall i' \neq i.
+	$$
+	则对应输出为
+	\begin{align*}
+		\mathrm{KAN}(x;\tilde{\mathcal{C}})_j
+		&= \sum_{i'=1}^{d} \sum_q \tilde{C}_{j,i',q} B_q(x_{i'}) + b_j \\
+		&= \sum_{i'\neq i} \sum_q C_{j,i',q} B_q(x_{i'}) + b_j \\
+		&= \sum_{i'=1}^{d} \sum_q C_{j,i',q} B_q(\tilde{x}_{i'}) + b_j \\
+		&= \mathrm{KAN}(\tilde{x};\mathcal{C})_j.
+	\end{align*}
+	结合\eqref{eqn:kan_indep}得$f_j(x) = \mathrm{KAN}(x;\tilde{\mathcal{C}})$，且$\tilde{\mathcal{C}}_{j,i,:}=\mathbf{0}$，故$f_j \in \mathcal{F}_0$。
+	综上双向蕴含成立，定理得证。
+\end{proof}
+
+证明建立了节点统计独立性与参数张量零通道之间的等价关系，为模型中条件独立性矩阵的构造提供了严格理论依据。在整体模型中，该结论使得节点间有无因果边可以直接通过参数张量是否为零来判断，为后续引入稀疏正则化和无环约束奠定了基础。在实验层面，这一准则保证了可以通过参数稀疏化直接实现因果结构学习，避免了复杂的独立性检验步骤，提升了算法在高维数据上的稳定性与计算效率，同时减少了因统计检验误差带来的因果图误判问题。
+
+\subsection{稀疏正则化表达}
+KAN的稀疏化技术可追溯至Ravikumar等人提出的SPAM方法~\cite{Ravikumar2009}。SPAM融合了稀疏线性模型与加性非参数回归的理念，可实现与Lasso相同的效果。刘等人~\cite{Ziming2025}在其研究中提出引入额外熵正则化以实现KAN的稀疏化。然而我们发现，由于两种方法均无法使参数矩阵$C\rightarrow 0$，因此二者均能有效应用于DAG-KAN。式(4-3)表明矩阵$W\left( f \right) $仅与参数矩阵$C$相关，因此DAG-KAN的稀疏化可直接作用于$C$。下列命题揭示了如何高效实现DAG-KAN的稀疏化：
+\begin{theorem}[DAG-KAN稀疏化命题]
+	\label{proposition3}
+	设DAG-KAN的优化目标为$\mathcal{L} + \lambda \ell_1$，其中$\mathcal{L}$表示原始损失函数，$\ell_1$由张量$L_{1,1,1}$范数定义：
+	\begin{equation}
+		\ell_1 = \left\| \mathcal{C} \right\| _{1,1,1} = \sum_{j=1}^d \sum_{i=1}^d \sum_{q=0}^{g+k} |C_{j,i,q}| \label{eq4-4}
+	\end{equation}
+	$\lambda > 0$为正则化系数。最小化此目标函数将使最优解$\mathcal{C}^*$趋于稀疏：
+	\begin{equation}
+		C_{j,i,q}^* \rightarrow 0 \quad \text{对于绝大多数} \ (j,i,q)
+	\end{equation}
+	这种稀疏性迫使DAG-KAN的因果图趋向稀疏结构（非零边极少），符合稀疏因果关系先验假设。
+\end{theorem}
+
+\begin{proof}
+	证明分为五步严格推导稀疏性机制：
+	
+	\noindent\textbf{步骤1：优化目标函数.}
+	整体训练目标为拟合损失与稀疏正则的联合最小化：
+	\begin{equation}
+		\min_{\mathcal{C}} \Big[ \underbrace{\mathcal{L}(\mathcal{C})}_{\text{重建损失}} + \lambda \underbrace{\|\mathcal{C}\|_{1,1,1}}_{L_1\text{正则}} \Big], \quad \|\mathcal{C}\|_{1,1,1} = \sum_{j,i,q} |C_{j,i,q}|.
+	\end{equation}
+	
+	\noindent\textbf{步骤 2：次梯度最优性条件.}
+	对任意参数$C_{j,i,q}$，最优解$C^*_{j,i,q}$满足次梯度为零：
+	\begin{itemize}
+		\item 若 $C_{j,i,q}^* \neq 0$：
+		\begin{equation}
+			\frac{\partial \mathcal{L}}{\partial C_{j,i,q}} \bigg|_{\mathcal{C}=\mathcal{C}^*} + \lambda \cdot \text{sign}(C_{j,i,q}^*) = 0.
+		\end{equation}
+		\item 若 $C_{j,i,q}^* = 0$：
+		\begin{equation}
+			\left| \frac{\partial \mathcal{L}}{\partial C_{j,i,q}} \bigg|_{\mathcal{C}=\mathcal{C}^*} \right| \leq \lambda.
+		\end{equation}
+	\end{itemize}
+	
+	\noindent\textbf{步骤3：稀疏性筛选机制.}
+	\begin{itemize}
+		\item 非零参数要求$|\partial \mathcal{L}/\partial C_{j,i,q}| > \lambda$，即只有对损失影响显著的重要参数才会保留；
+		\item 梯度幅值小于$\lambda$的参数会被正则项主导，强制置为0。
+	\end{itemize}
+	
+	\noindent\textbf{步骤 4：软阈值参数更新规则.}
+	梯度下降中$L_1$正则等价于软阈值操作，参数更新为：
+	\begin{equation}
+		C_{j,i,q} \gets \text{sign}\left(C_{j,i,q} - \eta \frac{\partial \mathcal{L}}{\partial C_{j,i,q}}\right) \cdot \max\left( \left|C_{j,i,q} - \eta \frac{\partial \mathcal{L}}{\partial C_{j,i,q}}\right| - \eta \lambda, 0 \right),
+	\end{equation}
+	其中$\eta$为学习率。该操作会将幅值较小的权重直接截断为0，实现因果边自动剪枝。
+	
+	\noindent\textbf{步骤5：大正则化极限稀疏性.}
+	当$\lambda \to +\infty$时，软阈值阈值趋于无穷，几乎所有权重均被置零：
+	\begin{equation}
+		\lim_{\lambda \to \text{large}} C_{j,i,q}^* = 0, \quad \forall (j,i,q) \text{ except few significant ones}.
+	\end{equation}
+	
+	\noindent\textbf{稀疏性与因果图一致性.}
+	$\mathcal{C}^*$中的稀疏模式直接对应因果图边的存在性，非零权重对应有向边，零权重对应无边，完美契合稀疏因果图假设。
+\end{proof}
+
+证明从优化条件与参数更新规则出发，严格说明了 \(L_1\) 正则能够使参数张量趋于稀疏的内在机理。在模型框架中，这一结论直接支撑了通过参数稀疏化学习稀疏因果图的设计思路，使得参数空间的稀疏性与图结构的稀疏性相对应，为联合优化目标提供了可实现的稀疏约束方式。在实验中，该结论为正则化系数的选取、参数更新策略的设计提供了理论依据，能够有效抑制冗余参数与虚假因果边，提高因果结构识别的精度，同时在高维场景下降低计算开销，提升模型训练的稳定性与收敛速度。
+
+\subsection{DAG-KAN算法}\label{3.2.4}
+
+我们从优化问题的角度阐释了DAG-KAN如何实现有向无环图（DAG）与条件混合模型（CMFs）的联合学习。DAG-KAN被形式化为以下优化问题：
+\begin{equation}
+	\begin{aligned}
+		\underset{C}{\min}\ell \left( \mathrm{KAN}\left( x,C \right) ,x \right) +\lambda \left\| C \right\| _{1,1,1}+f\left( h\left( W\left( C \right) \right) \right)
+	\end{aligned}\label{eq4-6}
+\end{equation}
+
+不难看出，这三个项在数值上均为正，因此在最小化目标函数时将持续趋近于0，即：$\ell \left( \mathrm{KAN}\left( x,C \right) ,x \right) +\lambda \left\| C \right\| _1+f\left( h\left( W\left( C \right) \right) \right) \rightarrow 0$。具体而言，当$f\left( h\left( W\left( C \right) \right) \right) \rightarrow 0$时，$W\left( C \right) \rightarrow CMFs$成立；尤其当$f\left( h\left( W\left( C \right) \right) \right) =0$时，$W\left( C \right) \in \mathrm{CMFs}$。同时，当 $\ell \left( \mathrm{KAN}\left( x,C \right) ,x \right) \rightarrow 0$ 时，KAN中的可学习激活函数将持续收敛至变量间真实函数。在可识别模型中，此过程具有确定性：因模型因果关系可被识别，$W\left( C \right) $将被还原为唯一确定的DAG。当$f\left( h\left( W\left( C \right) \right) \right)$ 与 $\ell \left( \mathrm{KAN}\left( x,C \right) ,x \right) $ 的耦合衰减过程中，DAG-KAN 最终将返回一个有向无环图（DAG）。根据命题~\ref{prop:equiv}，该 DAG 对应于 KAN 中变量间真实函数的激活函数 $\phi $。
+
+\begin{theorem}[因果函数映射学习的节点独立性]
+	\label{proposition4}
+	在DAG-KAN中的因果发现过程具有节点独立性，即任意节点$x_i$存在错误边时，不会影响独立节点$x_j$的因果功能映射(CMF)学习。该特性确保CMF的准确性保持局部化，并对推断DAG中的结构性误差具有鲁棒性。
+\end{theorem}
+
+\begin{proof}
+	该证明基于DAG-KAN结构方程模型（SEM）的加性分解性质。考虑每个节点$x_j$的数据生成过程：
+	\[
+	x_j = f_j(\mathbf{pa}_j) + \epsilon_j = \sum_{k=1}^{|\mathbf{pa}_j|} \phi_{j,k}(\mathrm{pa}_{j,k}) + \epsilon_j
+	\]
+	其中 $\mathbf{pa}_j$ 为 $x_j$ 的父节点集合，$\phi_{j,k}$ 是通过 KAN 参数化的单变量函数（参见第~\ref{3.2.1}节，式~\ref{eq4-1}）。
+	
+	联合学习目标可按节点进行加性分解：
+	\[
+	\mathcal{L}(G, \Phi) = \underbrace{\sum_{j=1}^d \left[ -\log p(\mathbf{x}_j | \mathbf{pa}_j; \Phi_j) + \lambda_1 R_1(\Phi_j) \right]}_{\text{节点特异项}} + \lambda_2 \|B_G\|_0
+	\]
+	其中 $\Phi_j = \{\phi_{j,k}\}_{k=1}^{|\mathbf{pa}_j|}$，且 $R_1(\Phi_j) = \sum_{k=1}^{|\mathbf{pa}_j|} \|\phi_{j,k}\|_{L_2}$ 表示函数空间正则化项（参见第~\ref{3.2.4}节，式~\ref{eq4-6}）。
+	
+	关键在于，目标函数对$\Phi_j$的梯度仅依赖局部参数：
+	\[
+	\nabla_{\Phi_j} \mathcal{L} = \nabla_{\Phi_j} \left[ -\log p(\mathbf{x}_j | \mathbf{pa}_j; \Phi_j) + \lambda_1 R_1(\Phi_j) \right]
+	\]
+	该梯度不存在对参数$\Phi_i$（当$i \neq j$时）或结构误差$\mathcal{E}_{x_i}$的功能依赖性，因为：
+	\begin{itemize}
+		\item 对数似然函数 $-\log p(\mathbf{x}_j | \mathbf{pa}_j; \Phi_j)$ 仅取决于 $x_j$ 的父节点及其自身的 KAN 参数
+		\item 正则化项 $R_1(\Phi_j)$ 仅作用于 $\Phi_j$ 的函数空间
+		\item L0 惩罚项 $\|B_G\|_0$ 影响图拓扑结构但不影响 CMFs 参数估计
+	\end{itemize}
+	
+	因此在优化过程中：
+	\[
+	\Phi_j^{(t+1)} = \Phi_j^{(t)} - \eta \nabla_{\Phi_j} \mathcal{L}(\mathbf{x}_j, \mathbf{pa}_j; \Phi_j)
+	\]
+	更新项 $\Phi_j^{(t+1)}$ 对 $\mathcal{E}_{x_i}$ 的变化保持不变，因为梯度中不包含跨节点项。这种数学可分离性意味着：
+	\[
+	\frac{\partial \mathcal{L}}{\partial \phi_{j,k}} = g(\mathbf{x}_j, \mathrm{pa}_{j,k}; \phi_{j,k}) \quad \text{与 } \mathbf{pa}_i \ \forall i \neq j \text{ 无关}.
+	\]
+\end{proof}
+
+\begin{corollary}[错误边的误差局部性]
+	\label{coro:error_local}
+	在DAG-KAN的因果学习过程中，节点$x_i$上的错误边$\mathcal{E}_{x_i}$仅会影响自身父节点集合的识别，不会向其他独立节点$x_j$（$j\neq i$）的因果函数映射学习过程传播误差。
+\end{corollary}
+
+证明说明了模型在优化过程中各节点的因果函数学习具有局部独立性，误差不会在节点间传递。在模型整体设计中，这一性质保证了因果结构学习与因果函数拟合可以相对独立地进行，提升了模型整体的稳定性与可解释性。在实验中，该结论使得单个节点的结构误判不会影响其他变量的函数估计，能够有效降低错误传播，提高在噪声数据、高维变量场景下的因果恢复精度，同时让模型在训练过程中更易收敛、参数更新更稳定。
+
+DAG-KAN方法的设计基于上述分析。其伪代码如算法~\ref{alg1}所示。
+\begin{algorithm}
+	\caption{DAG-KAN算法}
+	\label{alg1}
+	\begin{algorithmic}[1]
+		\REQUIRE 观测数据矩阵 $X\in\mathbb{R}^{n\times d}$，初始参数张量 $\mathcal{C}^{(0)}$，满足$W(\mathcal{C}^{(0)})\in \text{CMFs}$
+		\STATE 初始化：阈值$\mu^{(0)}$，衰减因子$\alpha$，$L_1$参数$\lambda$，迭代次数$T$，收敛阈值$\omega$
+		\FOR{$t=0,1,...,T-1$}
+		\STATE 求解优化问题：
+		\[
+		\mathcal{C}^{(t+1)}=\arg\min_{\mathcal{C}^{(t)}}
+		\ell\big(\mathrm{KAN}(x,\mathcal{C}^{(t)}),x\big)
+		+\lambda \|\mathcal{C}^{(t)}\|_{1,1,1}
+		+f\big(h(W(\mathcal{C}^{(t)}))\big)
+		\]
+		\STATE 更新障碍参数：$\mu^{(t+1)}=\alpha \mu^{(t)}$
+		\STATE 判断损失是否小于$\omega$，若满足则提前终止
+		\ENDFOR
+		\STATE 对$W(\mathcal{C}^{(T)})$执行硬阈值处理得到邻接矩阵
+		\ENSURE 因果图邻接矩阵$W(\mathcal{C}^{(T)})$，各节点因果函数$\phi_{j,i}(x_i)$
+	\end{algorithmic}
+\end{algorithm}
+
+DAG-KAN算法采用中心路径方法解决优化问题，如式(4-6)所示，该过程分为三个步骤：(1) 被动观测数据输入与参数初始化；(2) 优化目标函数并更新矩阵$W\left( C \right) $与障碍参数；(3) 对$W\left( C \right) $进行阈值处理。具体而言，第二步目标函数中的无环约束可采用任何有效的无环约束形式（如指数幂、多项式或对数行列式），而第三步阈值处理通过对矩阵$W\left( C \right) $进行硬阈值化后处理，确保其成为有向无环图（DAG）。最终返回描述因果关系的矩阵$W\left( C \right) $，以及描述因果变量$\phi(x_i)$之间定量关系的可学习激活函数。
+
+\section{实验验证}
+为验证 DAG-KAN 方法的有效性，本节从模拟数据与真实数据两个维度开展系统实验。模拟数据实验分为联合学习与结构学习两类任务：联合学习任务验证模型同时恢复因果结构与函数映射的能力，结构学习任务则在不同图拓扑、核函数与变量维度下，与主流基线算法进行性能对比；真实数据实验采用 Sachs 蛋白质信号传导数据集，检验模型在实际场景中的适用性。实验以结构汉明距离、真正例率、假正例率及运行时间为核心指标，同时分析模型对关键超参数的敏感性，全面评估方法的结构识别精度、函数拟合效果与计算效率。
+
+\subsection{模拟数据联合学习实验设置}\label{initialization}
+本文实验部分主要有三个目的：首先，验证DAG-KAN联合学习有向无环图（DAG）和条件混淆因子（CMFs）的能力；其次，将DAG-KAN与其他DAG结构学习基线模型进行比较；最后，分析DAG-KAN的参数敏感性。DAG-KAN(GPU)在GPU上运行（频率21,000 MHz，配备24 GB内存的GeForce RTX 4090显卡）。除DAG-KAN(GPU)外，其余算法均在CPU上运行（Intel® Core™ i9-14900K处理器，频率3.20 GHz，配备64 GB内存）。
+
+\begin{table}[htbp]
+	\centering
+	\caption{实验参数设置与训练细节}
+	\label{tab:params}
+	\begin{tabular}{ll}
+		\toprule
+		\textbf{参数项} & \textbf{设置} \\
+		\midrule
+		初始化矩阵 & \(W(C) = 0\) \\
+		总迭代次数 \(T\) & 4 \\
+		迭代因子 \(\mu\) & \(\{0.1, 0.01, 0.001, 0.0001\}\) \\
+		对数行列式系数 \(s\) & 1.0 \\
+		优化器 & Adam \\
+		学习率 & \(2\times 10^{-4}\) \\
+		衰减因子 \((\beta_1, \beta_2)\) & \((0.99, 0.999)\) \\
+		前期迭代（\(t=0,1,2\)）步数 & \(7\times 10^4\) 或 \(\epsilon<10^{-6}\)（收敛） \\
+		最后迭代（\(t=3\)）步数 & \(8\times 10^4\) 或 \(\epsilon<10^{-6}\)（收敛） \\
+		阈值裁剪值 & 0.3 \\
+		额外步骤 & 增加后训练步骤，弥补硬阈值不足 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+在DAG-KAN优化结束时，对所有情况均采用0.3的阈值对成对关系进行阈值截断。然而在联合学习任务中，简单的硬阈值处理会导致部分子节点值被强制移除——即在阈值截断时，这部分较小的值被视为不存在的有向边。但这部分值仍会产生微小贡献。因此在硬阈值处理后，DAG-KAN在执行算法1后添加了后优化过程，该后优化问题可表述如下：
+\begin{equation}
+	\begin{aligned}
+		&\underset{C}{\min}\ell \left( \mathrm{KAN}\left( X,mask\left( C \right) \right) -X \right) +\lambda _2\left\| mask\left( C \right) \right\| _2
+		\\
+		&mask\left( C \right) =\begin{cases}
+			C_{jiq}=0,\forall q&		W_{threshold}\left( C \right) _{ji}=0\\
+			C_{jiq},\forall q&		W_{threshold}\left( C \right) _{ji}\ne 0\\
+		\end{cases}
+	\end{aligned}
+\end{equation}
+
+后优化过程的主要目的是仅优化由$W_{threshold}\left( C \right)$确定的父节点与其子节点之间的参数，因为该过程会使用掩码切断变量间的值传递，从而避免建立有向边，这有助于我们学习更精确的CMFs。通过设置正则化因子 $\lambda_{L_2} =0.002$，$L_2$ 正则化可有效防止过拟合。
+
+\subsection{模拟数据联合学习实验结果与分析}
+
+我们通过一组人工构建的模拟数据验证了DAG-KAN联合学习有向无环图（DAG）与条件混合分布（CMFs）的能力。模拟数据的生成基于具有5个节点和8条因果边的关系加法模型SEM~\ref{eq-joint learning}，其中因果关系的作用规律以函数形式描述。
+\begin{equation}
+	\begin{aligned}
+		x_0&=x_{1}^{_2}+\sin \left( \pi \cdot x_2 \right) +\tanh \left( x_4 \right) \\x_1&=\text{random\,\,from\,\,uniform}\\x_2&=\sqrt{\left| x_1 \right|}+e^{x_3}+\sin \left( \pi \cdot x_4 \right) \\x_3&=\text{random\,\,from\,\,uniform}\\x_4&=e^{x_1}+x_{3}^{_2}
+	\end{aligned}
+	\label{eq-joint learning}
+\end{equation}
+
+图~\ref{figure5-1}展示了DAG-KAN从模拟数据中学习DAG和CMFs的结果，呈现了使用DAG-KAN进行联合学习的成果，包括完整发现八条真实正向边，以及学习每条边上的因果映射关系。
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth]{5-FDAG_learning.pdf}
+	\caption{左图：DAG 和 CMFs 以 KAN 模块的形式呈现，链接 $x_k \to \phi_{j,k} \to x_j$ 表示子节点 $x_k$ 通过函数 $\phi_{j,k}$ 影响父节点 $x_j$。非因果链接通过阈值过滤进行剪枝。右图：DAG 和 CMFs 以邻接矩阵的形式呈现。}
+	\label{figure5-1}
+\end{figure}
+尽管从图~\ref{figure5-1}可以观察到DAG-KAN成功学习了DAG和CMFs，但是无法精确地了解函数拟合的程度。表~\ref{tabel5-1}提供均方误差(MSE)、决定系数($R^2$)和皮尔逊相关系数($ \rho $)三项统计量作为CMFs的评估指标。表中评估指标源于DAG-KAN预测的CMFs与根据加性模型SEM~\ref{eq-joint learning}生成的真实CMFs之间的差异。例如，DAG-KAN预测的因果映射$\phi_{0,1}$对应$x_0$与$x_{1}^{_2}$之间的关系，可观察到$\phi_{0,1}$呈现二次函数形态。综上所述，总体来说DAG-KAN正确完整地学习了公式\ref{eq-joint learning}中的DAG结构，且因果映射函数拟效果优越。均方误差达到了$10^{-3}$的精度，平均决定系数和相关系数达到了$0.968$和$0.988$，接近极限1，说明拟合程度很好。
+\begin{table}[!htb]
+	\centering
+	\small
+	\caption{Results of joint learning tasks}
+	\label{tabel5-1}
+	\begin{tabular}{c c c c c c c c}
+		\toprule
+		($x_k$,$x_j$) & MSE      & $R^2$     & $\rho$    & ($x_k$,$x_j$) & MSE      & $R^2$     & $\rho$   \\
+		\midrule
+		(1, 0)  & 0.0031  & 0.965  & 0.984  & (3, 2)  & 0.0045  & 0.990  & 0.995  \\
+		(2, 0)  & 0.0078  & 0.984  & 0.996  & (4, 2)  & 0.0072  & 0.986  & 0.994  \\
+		(4, 0)  & 0.0037  & 0.913  & 0.972  & (1, 4)  & 0.0023  & 0.995  & 0.998  \\
+		(1, 2)  & 0.0033  & 0.941  & 0.970  & (3, 4)  & 0.0026  & 0.971  & 0.995  \\
+		average & 0.0043  & 0.968  & 0.988  &         &         &         &          \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+在实际应用中，DAG-KAN上的可学习激活函数$\phi$会偏离垂直轴上的真实函数$\phi \prime $，这源于式(3-2)中偏置项$b$的存在。$b$控制着函数偏离水平轴的程度，并作为使函数更好地拟合数据的调节因子。为客观评估拟合函数的准确性，我们执行两者间的对齐操作：估算拟合曲线与真实曲线在纵轴方向的平移量 $c=\frac{1}{N}\sum{\left( x_j-x_j\prime \right)}$，并在对齐后计算均方误差MSE、决定系数$R^2$及相关系数$\rho$。
+
+\subsection{模拟数据结构学习实验设置}
+
+DAG-KAN的初始化过程与第~\ref{initialization}节所述相同，且在所有实验设置中运行的DAG-KAN参数保持不变。然而，我们未采用后训练步骤，因为该步骤不会改变有向无环图的结构推断结果，仅对函数拟合精度产生影响。
+
+{\hei 1. 基线算法}
+
+我们将DAG-KAN与经典因果发现方法及近年主流连续优化类方法进行全面对比，覆盖约束-based、得分-based、梯度-based 等多种范式。对比方法包括：基于加性噪声模型的 CAM、基于连续无环约束的 DAGMA、基于 NOTEARS 框架的 notears-mlp 与 notears-sob、基于图神经网络的 DAG-GNN、基于极大似然估计的 GOLEM，以及传统经典方法 GES 与 PC。
+CAM 通过独立性检验与回归筛选识别因果结构，适用于加性噪声模型；DAGMA 利用对数行列式约束将 DAG 学习转化为连续优化问题，具有较强的理论收敛保证；notears-mlp 与 notears-sob 分别以多层感知机、样条函数拟合非线性因果关系；DAG-GNN 将图神经网络与因果结构学习结合，端到端优化邻接矩阵；GOLEM 基于极大似然与因果约束实现非线性结构学习；GES 为贪婪等价搜索方法，在贝叶斯信息准则下搜索最优马尔可夫等价类；PC 则通过条件独立性检验构建因果图骨架并定向边。所有基线方法均按照原始文献的推荐参数设置，具体如表~\ref{tab:baseline_params}所示。
+
+\begin{table}[!htbp]
+	\caption{基线算法参数汇总}
+	\label{tab:baseline_params}
+	\begin{tabularx}{\linewidth}{lX}
+		\toprule[1.5pt]
+		\textbf{算法} & \textbf{参数} \\
+		\midrule
+		CAM        & 阈值=0.001, 修剪=True \\
+		DAGMA      & 参见DAGMA附录C2.2 \\
+		notears-mlp& $l_1$正则化=0.01, $w_\mathrm{threshold}$=0.3 \\
+		notears-sob& $l_1$正则化=0.01, $w_\mathrm{threshold}$=0.3 \\
+		DAG-GNN    & 学习率=0.003 \\
+		GES/PC     & 考虑无向边输出，若真实图存在对应有向边则记为真正例 \\
+		\bottomrule[1.5pt]
+	\end{tabularx}
+\end{table}
+
+{\hei 2. 图模型设置}
+
+实验中采用两类典型随机有向无环图生成机制，分别为埃尔德什–雷尼（Erdős–Rényi, ER）模型与无标度（Scale-Free, SF）模型，用于覆盖稀疏、均匀、重尾度分布等不同图结构。
+ER 模型以固定概率 \(p\) 独立生成任意两点间的有向边，边数期望满足
+\[
+\mathbb{E}[|\mathcal{E}|] = p \cdot d (d-1),
+\]
+结构整体稀疏且度分布接近均匀。
+SF 模型遵循优先连接规则，新节点倾向于连接已有度更高的节点，节点度服从幂律分布 \(P(k) \sim k^{-\gamma}\)，其中 \(\gamma>1\) 为幂指数。
+记 \(ERk\) 与 \(SFk\) 分别表示含 \(d\) 个节点、边数约为 \(k \cdot d\) 的 DAG 结构。本实验共设置六种结构：\(\{ER1, ER2, ER4, SF1, SF2, SF4\}\)，以系统评估不同稀疏度与拓扑结构下的算法性能。
+
+{\hei 3. 模拟数据生成}
+
+模拟数据遵循非线性加性结构方程模型（SEM），生成形式为
+\[
+X_j = \sum_{i \in \mathrm{Pa}(j)} f_{ji}(X_i) + z_j,
+\]
+其中 \(z_j \sim \mathcal{N}(0,1)\) 为独立高斯噪声，\(f_{ji}\) 为非线性因果机制，由高斯过程（GP）根据不同核函数构造。实验共使用六种核函数，以覆盖平滑、周期性、长程相关等多种函数形态，具体表达式如表~\ref{tab:kernels}所示。
+
+\begin{table}[htbp]
+	\centering
+	\caption{模拟数据使用的六种核函数}
+	\label{tab:kernels}
+	\setlength{\tabcolsep}{3pt}
+	\begin{tabular}{ll}
+		\toprule
+		核函数类型 & 数学表达式 \\
+		\midrule
+		RBF 核 & $k(x,x') = \exp\left(-\dfrac{\|x-x'\|^2}{2\ell^2}\right)$ \\
+		Matérn 核 & $k(x,x') = \dfrac{1}{\Gamma(\nu)2^{\nu-1}}\left(\dfrac{\sqrt{2\nu}}{\ell}\|x-x'\|\right)^\nu K_\nu\!\left(\dfrac{\sqrt{2\nu}}{\ell}\|x-x'\|\right)$ \\
+		周期核 & $k(x,x') = \exp\left(-\dfrac{2\sin^2(\pi\|x-x'\|/p)}{\ell^2}\right)$ \\
+		有理二次核 & $k(x,x') = \left(1+\dfrac{\|x-x'\|^2}{2\alpha\ell^2}\right)^{-\alpha}$ \\
+		RBF+周期加和核 & $k(x,x') = k_\mathrm{RBF}(x,x') + k_\mathrm{per}(x,x')$ \\
+		RBF×周期乘积核 & $k(x,x') = k_\mathrm{RBF}(x,x') \cdot k_\mathrm{per}(x,x')$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+{\hei 4. 评估指标及计算公式}
+
+采用结构汉明距离（SHD）、真正例率（TPR）、假正例率（FPR）以及运行时间作为评价指标，各指标定义如下：
+
+设真实边集合为 \(E\)，预测边集合为 \(\hat{E}\)，\(P=|E|\) 为真实边总数，\(N=d(d-1)-P\) 为非边总数。
+\begin{itemize}
+	\item 结构汉明距离
+	\[
+	\mathrm{SHD} = |\hat{E} \setminus E| + |E \setminus \hat{E}| + \mathrm{rev}(\hat{E},E),
+	\]
+	表示缺失边、冗余边与反向边的总数之和。
+	\item 真正例率
+	\[
+	\mathrm{TPR} = \frac{|\hat{E} \cap E|}{P},
+	\]
+	衡量正确识别出的边占真实边的比例。
+	\item 假正例率
+	\[
+	\mathrm{FPR} = \frac{|\hat{E} \setminus E|}{N},
+	\]
+	衡量错误预测的边占真实无边的比例。
+\end{itemize}
+运行时间记录算法从数据输入到输出因果图的总耗时。
+
+\subsection{模拟数据结构学习实验结果与分析}\label{experiment5-4}
+图~\ref{figure5-2}呈现了 DAG-KAN 与各对比算法在 6 个加性模型上的平均结构汉明距离（SHD）结果。从整体性能来看，DAG-KAN 在多数实验配置下均展现出显著优势：不仅明显优于 PC、GES 等传统因果发现算法，也在与基于连续优化的主流方法（如 DAGMA、notears、DAG-GNN）的对比中表现突出。在小规模节点（$d<60$）和图结构稀疏（ER1\&SF1）的场景下，DAG-KAN 与当前加性模型领域的最优算法 CAM 性能接近，SHD 值差异控制在 $1\-2$ 范围内，这表明轻量级 KAN 架构在简单因果机制建模中并未因结构精简而损失核心拟合能力。而在大规模节点（$d>60$）和图结构稠密（ER4\&SF4）模型中，此时 DAG-KAN 的优势愈发明显，相较于 CAM 算法降低了22.6\%的结构汉明距离，尤其在高维（$d=100$）高复杂度（$ER4/SF4$）场景中，其优势达41.7\%。这一结果验证了 DAG-KAN 针对高维加性模型的适配性设计：轻量级 KAN 架构的单变量函数分解特性与加性模型的因果生成机制天然契合，有效避免了传统黑箱神经网络在高维场景下的过拟合与计算冗余问题；而适配 KAN 结构的节点独立性矩阵与稀疏正则化策略，进一步提升了结构识别的精准性。
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth]{5-SHD.pdf}
+	\caption{6个加性模型上的平均SHD结果（数值越低越好）。图中每个数据点基于5次重复实验估算，误差条表示标准误差。结果取自6个加性模型与2个同等复杂度图模型的平均值（共12个案例）。}
+	\label{figure5-2}
+\end{figure}
+
+图~\ref{figure5-3}聚焦 DAG-KAN、CAM 与 DAGMA三种代表性算法在复杂场景（$ER4/SF4$）下的多指标对比。可以看出，DAG-KAN 在核心性能指标上实现了全面优化：相较于 CAM，其平均 SHD 更低，真正例率（TPR）更高，假发现率（FDR）更低，且未牺牲运行效率。这一表现得益于 DAG-KAN 的联合学习框架。在学习因果结构的同时，通过 B 样条基函数显式拟合因果函数，使结构推断与函数拟合相互约束、相互促进，减少了单纯依赖结构约束或数据拟合带来的误判。
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\linewidth]{5-CAM_VS_DAGMA_KAN.pdf}
+	\caption{DAG-KAN、CAM与DAGMA所有指标的比较，选取6个加性模型与2个图模型（共12个案例）的平均值。结构汉明距离、FDR和运行时间数值越低越优，TPR数值越高越优。图中每个数据点基于5次重复实验估算，误差条表示标准误差。}
+	\label{figure5-3}
+\end{figure}
+
+DAG-KAN 通过采用轻量级 KAN 模型，在运行时间方面优于传统 MLP 方法。值得注意的是，DAG-KAN 使用 ADAM 优化器进行梯度更新，这使得 DAG-KAN 能够轻松利用 GPU 加速求解过程。在运行时对比中，我们补充了DAG-KAN与DAGMA在GPU上的运行结果，详见表~\ref{tabel5-2}。DAG-KAN（CPU）的运行时间短于DAGMA，凸显了轻量级KAN的优势；而DAG-KAN（GPU）的运行时间则优于CAM，彰显了基于连续优化的方法优势。
+\begin{table}[H]
+	\centering
+	\small
+	\caption{Average runtime of various algorithms on ER4\&SF4 graphs}
+	\label{tabel5-2}
+	\resizebox{\linewidth}{!}{
+		\begin{tabular}{lccccc}
+			\toprule
+			Algorithms & $d=20$ & $d=40$ & $d=60$ & $d=80$ & $d=100$ \\
+			\midrule
+			DAG-GNN      & \makecell{247.59  \footnotesize ±15.04} & \makecell{259.99  \footnotesize ±15.83} & \makecell{294.35  \footnotesize ±13.82} & \makecell{319.37  \footnotesize ±17.46} & \makecell{375.41  \footnotesize ±25.30} \\
+			notears-mlp  & \makecell{105.86  \footnotesize ±27.83} & \makecell{548.13  \footnotesize ±106.74} & \makecell{1046.49 \footnotesize ±160.59} & \makecell{1603.92 \footnotesize ±199.10} & \makecell{2332.77 \footnotesize ±194.14} \\
+			notears-sob  & \makecell{58.05    \footnotesize ±9.50}   & \makecell{242.56  \footnotesize ±52.13} & \makecell{584.21  \footnotesize ±169.79} & \makecell{1119.93 \footnotesize ±174.23} & \makecell{1535.07 \footnotesize ±238.99} \\
+			DAGMA        & \makecell{408.09  \footnotesize ±15.4}  & \makecell{525.87  \footnotesize ±23.5}  & \makecell{723.20  \footnotesize ±19.6}  & \makecell{795.82  \footnotesize ±64.0}  & \makecell{1042.93 \footnotesize ±48.1}  \\
+			CAM          & \makecell{ \pmb{37.90}   \footnotesize \pmb{±4.8}}    & \makecell{ \underline{74.65   \footnotesize ±3.8}}    & \makecell{ \underline{125.34  \footnotesize  ±5.6}}   & \makecell{ \underline{181.41  \footnotesize  ±6.0}}    & \makecell{ \underline{220.04  \footnotesize  ±19.7}}  \\
+			DAG-KAN(CPU) & \makecell{208.86  \footnotesize ±28.4}   & \makecell{370.78  \footnotesize ±45.3}   & \makecell{569.65  \footnotesize ±65.1}   & \makecell{762.15  \footnotesize ±89.1}   & \makecell{986.27  \footnotesize ±171.1} \\
+			DAG-KAN(GPU) & \makecell{ \underline{41.02   \footnotesize ±5.9}}    & \makecell{ \pmb{66.81}   \footnotesize \pmb{±10.0}}   & \makecell{ \pmb{93.24}   \footnotesize \pmb{±10.7}}   & \makecell{ \pmb{115.87}  \footnotesize \pmb{±16.7}}   & \makecell{ \pmb{163.08}  \footnotesize \pmb{±20.0}}  \\
+			\bottomrule
+		\end{tabular}
+	}
+\end{table}
+
+
+为进一步验证算法的鲁棒性，图~\ref{figure6-SHD}、~\ref{figure6-TPR}、~\ref{figure6-FPR}、~\ref{figure6-runtime}系统展示了DAG-KAN算法在不同核函数生成机制（RBF、Matern、RQ、Periodic及其复合形式）与图模型复杂度（ER、SF系列）下的综合性能表现。通过与CAM、DAGMA、NOTEARS-MLP及DAG-GNN等主流基线算法的多维度对比，实验结果充分验证了DAG-KAN在结构恢复精度、虚假边控制及计算可扩展性方面的显著优势。
+
+首先，在结构恢复精度方面（图~\ref{figure6-SHD}与图~\ref{figure6-TPR}），DAG-KAN展现了卓越的鲁棒性。如图~\ref{figure6-SHD}所示，在低维稀疏场景（ER1/SF1，节点数$d<40$）下，DAG-KAN的结构汉明距离（SHD）与当前最优的加性模型算法CAM相当，表明轻量级KAN架构在简单因果机制下并未因参数量精简而损失拟合能力。然而，随着维度增加至$d=100$且图结构趋于稠密（ER4/SF4），传统连续优化方法（如NOTEARS系列）的SHD呈指数级上升，难以捕捉复杂的非线性交互；相比之下，DAG-KAN的SHD增长曲线最为平缓。特别是在周期性核（Periodic）与复合核（RBF+Periodic）生成的振荡数据中，得益于B样条基函数优异的局部逼近特性，DAG-KAN相比CAM算法平均降低了约22.6\%的SHD。图~\ref{figure6-TPR}的真阳性率（TPR）指标进一步印证了这一结论：在高维复杂设置下，DAG-KAN保持了超过85\%的TPR，显著优于DAGMA和NOTEARS系列。
+
+其次，在假阳性控制能力方面（图~\ref{figure6-FPR}），DAG-KAN表现出更强的稀疏性诱导机制。实验数据显示，基于评分搜索的方法（如GES）及部分神经网络方法（如DAG-GNN）在处理Matern和RQ等复杂核函数时，FPR容易出现激增，倾向于学习冗余边以拟合噪声。反观DAG-KAN，通过$L_1$范数直接作用于KAN系数矩阵$C$，实现了对非因果路径系数的有效压缩。在所有12种实验配置中，DAG-KAN的假阳性率（FPR）始终控制在5\%以下，且在$d=100$的高维场景下仍保持最低水平。
+
+最后，在计算效率与可扩展性方面（图~\ref{figure6-runtime}），DAG-KAN展示了显著的工程应用价值。尽管DAG-KAN (CPU)版本的运行时间略高于专用的线性求解器，但其GPU加速版本展现了惊人的性能提升。如表~\ref{tabel5-2}及图~\ref{figure6-runtime}所示，在$d=100$的ER4/SF4复杂场景下，DAG-KAN (GPU)的平均运行时间仅为CAM的约70\%，更是比DAGMA-MLP和NOTEARS-MLP快了一个数量级（从千秒级降至百秒级）。随着节点数增加，基于深层神经网络的方法因反向传播计算图过大导致耗时急剧攀升，而DAG-KAN采用的单层轻量级架构大幅减少了前向传播的计算量，使其时间复杂度增长接近线性。
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\linewidth]{6-SHD.pdf}
+	\caption{DAG-KAN与多种算法在不同设置下的SHD对比。}
+	\label{figure6-SHD}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\linewidth]{6-TPR.pdf}
+	\caption{DAG-KAN与多种算法在不同设置下的TPR对比。}
+	\label{figure6-TPR}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\linewidth]{6-FPR.pdf}
+	\caption{DAG-KAN与多种算法在不同设置下的FPR对比。}
+	\label{figure6-FPR}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\linewidth]{6-runtime.pdf}
+	\caption{DAG-KAN与多种算法在不同设置下的运行时间对比。}
+	\label{figure6-runtime}
+\end{figure}
+总体而言，相较于加性建模领域的前沿算法CAM，DAG-KAN在加性模型上实现了与CAM相当或更优的性能（无论在SHD还是运行时间方面），且无需进行预先领域搜索（PNS）和边修剪操作。相较于基于连续优化的DAGMA、notears和DAG-GNN等方法，多层感知器（MLP）和图神经网络（GNN）在发现加性模型时存在天然劣势，而实验证明DAG-KAN在加性模型因果关系发现方面具有显著优势。
+
+\subsection{真实数据联合学习实验结果}
+尽管DAG-KAN在模拟数据上展现出卓越性能（涵盖CMFs学习与DAG学习），但其在真实世界数据集的表现仍存未知——模拟数据无法完全替代真实数据。为验证 DAG-KAN 在真实场景中的适用性，本节采用因果发现领域广泛使用的 Sachs 数据集进行实验。该数据集包含 11 个节点（代表磷酸化蛋白）、18 条已知有向边，共 7466 个样本，数据源自蛋白质信号传导实验，其因果关系具有明确的生物学意义，是检验因果发现算法性能的标准数据集。数据源自因果发现工具箱软件包\footnote{https://github.com/FenTechSolutions/CausalDiscoveryToolbox}。实验重点评估 DAG-KAN 联合学习因果结构与函数的能力，并与 DAGMA-MLP、NOTEARS-MLP、DAG-GNN、GOLEM、CAM 等主流算法进行对比。
+
+\begin{table}[H]
+	\caption{DAG structures recovered from Sachs}
+	\label{table-Sachs}
+	\centering
+	\begin{tabular}{l c c c}
+		\toprule
+		Algorithms & TPR($\uparrow$) & SHD($\downarrow$) & Runtime (Seconds) \\
+		\midrule
+		DAGMA-MLP & 0.28 & 21 & 307.69  \\
+		NOTEARS-MLP & 0.28 & 22 & 463.23  \\
+		DAG-GNN & 0.17 & 26 & 1581.99  \\
+		GOLEM & 0.28 & 20 & 254.59  \\
+		CAM & 0.17 & 30 & \textbf{11.3}  \\
+		DAG-KAN & \textbf{0.39} & \textbf{18} & 64.27  \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+DAG-KAN与比较算法在Sachs数据集上的结果如表~\ref{table-Sachs}所示。从结构学习结果来看，DAG-KAN 的表现全面优于对比算法：真正例率（TPR）达到 0.39，高于所有对比方法；结构汉明距离（SHD）为 18，低于 DAGMA-MLP（21）、NOTEARS-MLP（22）、DAG-GNN（26）、GOLEM（20）和 CAM（30）。这一结果看似超出直觉，DAG-KAN 的轻量级架构在函数逼近能力上不及多层感知器或深层网络，却在真实数据上取得更优性能。经分析，核心原因可能在于 Sachs 数据集的因果机制天然符合加性模型特性：蛋白质信号传导过程中，每个蛋白的激活状态主要由少数几个上游蛋白通过独立的信号通路调控，这与 DAG-KAN 的单变量函数分解理念高度契合，使 DAG-KAN 能够更精准地捕捉真实因果结构。
+
+从运行效率来看，DAG-KAN 的表现同样出色。其运行时间为 64.27 秒，远低于 DAG-GNN（1581.99 秒）、NOTEARS-MLP（463.23 秒）和 DAGMA-MLP（307.69 秒），仅略高于 CAM（11.3 秒）。这一结果进一步验证了 DAG-KAN 轻量级架构的计算优势，即使在真实数据的复杂因果场景中，仍能保持高效的运行性能，为实际应用中的大规模数据处理提供了保障。
+
+在因果函数学习方面，DAG-KAN 能够输出具有明确物理意义的 B 样条函数表达式，为解析蛋白质信号传导机制提供了量化依据。通过分析学习到的因果函数发现，Sachs 数据集中部分节点存在虚假边与缺失边，这对因果函数的学习产生了一定影响\pozhehao 虚假边会引入无关变量的干扰，缺失边会导致部分因果依赖无法被充分建模。但得益于 DAG-KAN 的节点独立性特性（定理~\ref{proposition4}），单个节点的结构误差不会向其他节点传播，使得多数节点的因果函数仍能准确反映真实的信号传导关系。例如，在 Raf→Mek→Erk 的经典信号通路中，DAG-KAN 学习到的因果函数能够量化上游蛋白对下游蛋白的激活强度，其函数曲线的变化趋势与生物学实验结论一致，证明了该方法学习到的因果函数具有实际解释价值。
+
+图~\ref{fig-Sachs}展示了 DAG-KAN 在 Sachs 数据集上学习到的因果图结构。可以看出，DAG-KAN 成功识别出了大部分核心因果边，如 Plcg→PIP2、PIP2→Akt、Raf→Mek 等关键信号通路，与已知的生物学机制相符。同时，其识别出的虚假边数量较少，主要集中在功能关联较弱的蛋白对之间，这进一步验证了 DAG-KAN 在真实数据场景下的结构识别精度。
+\begin{figure}[H]
+	\centering
+	% \setlength{\abovecaptionskip}{-1pt}
+	\subfloat[Sachs数据集真实标签]{
+		\includegraphics[width=0.4\linewidth]{Sachs_true.pdf}}\hspace{4em}
+	\subfloat[Sachs数据集上的实验结果。]{
+		\includegraphics[width=0.4\linewidth]{Sachs_predict.pdf}}
+	\caption{真实数据实验结果}
+	\label{fig-Sachs}
+\end{figure}
+
+对比分析各算法的表现发现，传统基于连续优化的算法（如 DAGMA-MLP、NOTEARS-MLP）在真实数据上的 TPR 较低（0.28），主要原因在于其依赖的深层网络容易过度拟合数据中的噪声，导致因果结构推断出现偏差；CAM 算法虽运行速度快，但 TPR 仅为 0.17，SHD 高达 30，结构识别精度不足；DAG-GNN 由于模型复杂度较高，在样本量有限的 Sachs 数据集上出现严重过拟合，表现最差。而 DAG-KAN 能够在结构识别精度与函数拟合可靠性之间取得平衡，核心在于其轻量级架构与加性模型假设的合理性 —— 真实世界中的许多因果系统（如生物信号传导、经济政策影响）往往具有 “少数原因主导、独立作用叠加” 的特性，这与 DAG-KAN 的建模理念高度契合。
+真实数据实验结果表明，DAG-KAN 不仅在模拟数据中表现优异，在真实场景下仍能有效联合学习因果结构与函数。其学习到的因果结构具有较高的准确性，因果函数具有明确的实际意义，运行效率能够满足实际应用需求。这一结果验证了 DAG-KAN 方法的实用性与鲁棒性，为其在生物医学、精准医疗等真实领域的应用奠定了基础。同时也表明，基于 KAN 的因果发现方法在处理具有加性特性的真实因果系统时，具备独特的优势，为从观测数据中解析复杂系统的因果机制提供了新的技术途径。
+
+\subsection{参数敏感性分析}
+
+在DAG-KAN框架中，B样条基函数构成了非线性因果机制拟合的基础。其逼近能力与泛化性能主要受控于两个关键超参数：网格分辨率 $g$（Grid Size）与样条阶数 $k$（Spline Order）。其中，$g$ 定义了输入域被划分的细粒度区间数量，直接决定了模型捕捉局部高频变化的潜力；而 $k$ 则规定了基函数的多项式次数，主导了拟合曲线的光滑度与连续性约束。这两个参数共同界定了KAN求解器的假设空间复杂度：过低的配置可能导致欠拟合，无法还原真实的因果函数形态；而过高的配置则极易引发过拟合，将观测噪声误判为因果信号，同时显著增加计算开销。因此，探究参数配置对因果结构发现精度的边际效应，对于平衡模型表达能力与鲁棒性至关重要。
+
+为系统评估上述参数的敏感性，本节基于$SF2$无标度图模型（节点数$d=80$，样本量$n=1000$）构建合成数据集进行消融实验。数据生成过程采用高斯过程回归模拟加性噪声模型，并分别选取径向基函数（RBF）核与“RBF+周期”复合核，以涵盖从平滑单调到高频振荡两种典型的因果作用模式。实验结果如图~\ref{figure6-sensitive}所示，通过结构汉明距离（SHD，蓝色柱状图）与真阳性率（TPR，红色折线）的双重指标，揭示了参数变化对结构恢复性能的动态影响规律。
+
+首先，考察网格分辨率 $g$ 的非线性影响。实验数据显示，当 $g$ 从初始值 3 开始递增时，模型对因果函数的拟合能力显著增强，表现为 SHD 的快速下降与 TPR 的同步攀升。这表明在低网格密度下，增加基函数数量能有效缓解欠拟合，使模型更精准地捕捉变量间的依赖关系。然而，这种增益存在明显的饱和阈值：当 $g$ 落入 $[8, 15]$ 区间时，SHD 与 TPR 曲线趋于平缓，进入性能稳定区，说明此时基函数已足以表达真实因果机制的复杂度。值得注意的是，一旦 $g$ 超过该区间继续急剧增大，性能指标出现“断崖式”恶化——SHD 反弹上升，TPR 大幅回落。这一现象归因于过高的网格密度赋予了模型过度的自由度，使其开始拟合数据中的随机噪声而非内在因果律，导致虚假边的产生（假阳性增加）及真实边的遗漏。
+
+其次，分析样条阶数 $k$ 的影响趋势。与网格数的非单调特性不同，$k$ 的变化呈现出更为线性的负相关特征。随着阶数 $k$ 的增加，SHD 呈现缓慢但持续的上升趋势，而 TPR 则逐渐下降。这暗示了在当前的因果发现任务中，高阶多项式基函数引入的过度光滑约束可能抑制了模型对复杂非线性细节（尤其是振荡型因果函数）的局部适应能力，或者高阶基函数之间的共线性干扰了稀疏正则化的效果，导致结构识别精度受损。
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\linewidth]{6-para-sensitve.pdf}
+	\caption{不同网格数($g$)和阶数($k$)下，RBF与RBF+周期加性模型中DAG-KAN的结构汉明距离(SHD，蓝色直方图)与真实阳性率(TPR，红色折线)。}
+	\label{figure6-sensitive}
+\end{figure}
+
+综合上述分析，DAG-KAN 的性能对超参数选择表现出显著的“宽容区间”与“敏感边界”。在保证充分拟合的前提下，应避免盲目追求高复杂度。实验结果表明，将网格数设定为 $g=10$、样条阶数设定为 $k=3$ 是最优权衡方案：该配置既位于性能稳定区的中心，能够灵活适配平滑与振荡等多种因果模式，又有效规避了过拟合风险，确保了因果结构发现的准确性与鲁棒性。后续章节的所有实验均默认采用此参数组合。
+
+
+\section{本章小结}
+针对现有基于连续优化的因果发现方法仅能识别变量间因果结构存在性、难以揭示具体作用机理，以及在处理高维加性模型时性能退化的问题，本章提出了基于 Kolmogorov-Arnold 网络的因果结构与函数联合学习方法（DAG-KAN）。
+
+本章在模型构建上提出轻量的KAN求解器架构、条件独立性矩阵构建和稀疏正则化表达三点内容。首先构建了轻量级单层 KAN 求解器架构，利用 B 样条基函数的局部逼近特性显式拟合非线性因果机制，并通过偏导数推导了适配 KAN 结构的节点独立性矩阵，将离散的结构学习问题转化为对样条系数矩阵的连续优化问题。在此基础上，设计了基于$L_1$范数的稀疏正则化策略，直接作用于样条系数以实现因果边的自动剪枝，确保了学习到的图结构符合稀疏性假设且严格满足无环约束。
+
+在实验验证方面，本章在多种核函数生成的加性噪声模型数据上进行了系统评估。结果表明，DAG-KAN 在结构恢复精度上显著优于 CAM、NOTEARS 及 DAGMA 等主流基线算法，特别是在高维稠密图场景下，结构汉明距离平均降低了 22.6\%。同时，得益于轻量级架构与 GPU 加速，该方法在保持高精度的前提下大幅缩短了运行时间。此外，在 Sachs 真实数据集上的应用进一步证实了该方法联合学习因果图与因果函数的有效性，能够输出具有数学可解释性的函数表达式。最后，通过对网格分辨率与样条阶数的敏感性分析，确定了模型在不同数据分布下的最优参数配置区间。
+
+总体而言，DAG-KAN 成功实现了从“因果结构识别”到“因果机制解析”的转变，为理解变量间的定量依赖关系提供了新的技术途径。未来研究将致力于将KAN推广至深度网络，以解决更广泛非参数模型的因果发现问题。

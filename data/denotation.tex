@@ -2,25 +2,56 @@
 % 可以根据需要在chapter后加星星/去掉星星
 
 \begin{denotation}
-
-\item[HPC] 高性能计算 (High Performance Computing)
-\item[cluster] 集群
-\item[Itanium] 安腾
-\item[SMP] 对称多处理
-\item[API] 应用程序编程接口
-\item[PI]	聚酰亚胺
-\item[MPI]	聚酰亚胺模型化合物，N-苯基邻苯酰亚胺
-\item[PBI]	聚苯并咪唑
-\item[MPBI]	聚苯并咪唑模型化合物，N-苯基苯并咪唑
-\item[PY]	聚吡咙
-\item[PMDA-BDA]	均苯四酸二酐与联苯四胺合成的聚吡咙薄膜
-\item[$\Delta G$]  	活化自由能~(Activation Free Energy)
-\item [$\chi$] 传输系数~(Transmission Coefficient)
-\item[$E$] 能量
-\item[$m$] 质量
-\item[$c$] 光速
-\item[$P$] 概率
-\item[$T$] 时间
-\item[$v$] 速度
-
+	
+	% 核心因果建模符号
+	\item[$V$]           变量集合
+	\item[$X_{i}$]       单个观测变量
+	\item[$PA_{i}$]      变量$X_{i}$的父节点集合
+	\item[$G$]           因果结构对应的有向无环图
+	\item[$\mathcal{E}$] 因果图中的边集合
+	\item[$W$]           因果邻接矩阵
+	\item[$f_{i}$]       变量$X_{i}$的因果函数
+	\item[$U_{i}$]       变量$X_{i}$的外生噪声项
+	\item[SCM]           结构因果模型
+	\item[SEM]           结构方程模型
+	\item[FCM]           函数因果模型
+	
+	% KAN相关符号
+	\item[KAN]           柯尔莫哥洛夫-阿诺德网络
+	\item[$\phi_{j,i}$]  KAN中输入$X_{i}$到输出$X_{j}$的单变量激活函数
+	\item[$B_{q}(x)$]    B样条基函数
+	\item[$C_{j,i,q}$]   KAN的可学习系数）
+	\item[$g$]           B样条基函数的网格分辨率
+	\item[$k$]           B样条基函数的阶数
+	
+	% 算法与优化符号
+	\item[DAG-KAN]       基于KAN的连续优化因果发现算法
+	\item[Causal-KAN]    基于KAN的知识融合因果发现算法
+	\item[$\lambda$]     正则化系数
+	\item[$\ell_{1}$]    L1正则化
+	\item[$\mathcal{L}$] 模型拟合损失函数
+	\item[$h(W)$]        无环性约束函数
+	\item[$\nabla$]      梯度算子
+	\item[$\eta$]        优化器学习率
+	
+	% 评估指标符号
+	\item[SHD]           结构汉明距离
+	\item[TPR]           真正例率
+	\item[FPR]           假正例率
+	\item[MSE]           均方误差
+	\item[$R^{2}$]       决定系数
+	\item[$\rho$]        皮尔逊相关系数
+	
+	% 数据集与实验符号
+	\item[ER模型]        埃尔德什-雷尼随机图模型
+	\item[SF模型]        无标度随机图模型
+	\item[$d$]           变量维度
+	\item[$n$]           样本数量
+	\item[$\sigma$]      噪声水平
+	
+	% 其他常用符号
+	\item[$\partial_{k}f_{j}$] 函数$f_{j}$对变量$X_{k}$的偏导数
+	\item[$\|\cdot\|_{F}$] 弗罗贝尼乌斯范数
+	\item[$tr(\cdot)$]   矩阵的迹
+	
 \end{denotation}

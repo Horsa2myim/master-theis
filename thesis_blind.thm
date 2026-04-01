@@ -3,7 +3,7 @@
 \contentsline {proposition}{{性质}{2.{1}}{}}{19}{proposition.2.1}%
 \contentsline {proposition}{{性质}{2.{2}}{}}{19}{proposition.2.2}%
 \contentsline {definition}{{定义}{2.{3}}{可识别性}}{20}{definition.2.3}%
-\contentsline {definition}{{定义}{2.{4}}{非参数模型的可识别性}}{20}{definition.2.4}%
+\contentsline {definition}{{定义}{2.{4}}{非参数模型的可识别性}}{21}{definition.2.4}%
 \contentsline {definition}{{定义}{2.{5}}{因果结构\cite {Pearl2009}}}{22}{definition.2.5}%
 \contentsline {definition}{{定义}{2.{6}}{因果模型}}{22}{definition.2.6}%
 \contentsline {definition}{{定义}{2.{7}}{极小性}}{22}{definition.2.7}%
@@ -13,9 +13,9 @@
 \contentsline {theorem}{{定理}{3.{1}}{函数映射的等价性}}{29}{theorem.3.1}%
 \contentsline {proof}{{证明}{3.{1}}{}}{30}{proof.3.1}%
 \contentsline {theorem}{{定理}{3.{2}}{KAN的节点独立性准则}}{31}{theorem.3.2}%
-\contentsline {proof}{{证明}{3.{2}}{}}{32}{proof.3.2}%
-\contentsline {theorem}{{定理}{3.{3}}{DAG-KAN稀疏化命题}}{33}{theorem.3.3}%
+\contentsline {proof}{{证明}{3.{2}}{}}{31}{proof.3.2}%
+\contentsline {theorem}{{定理}{3.{3}}{DAG-KAN稀疏化命题}}{32}{theorem.3.3}%
 \contentsline {proof}{{证明}{3.{3}}{}}{33}{proof.3.3}%
-\contentsline {theorem}{{定理}{3.{4}}{因果函数映射学习的节点独立性}}{35}{theorem.3.4}%
-\contentsline {proof}{{证明}{3.{4}}{}}{35}{proof.3.4}%
-\contentsline {corollary}{{推论}{3.{1}}{错误边的误差局部性}}{36}{corollary.3.1}%
+\contentsline {theorem}{{定理}{3.{4}}{因果函数映射学习的节点独立性}}{34}{theorem.3.4}%
+\contentsline {proof}{{证明}{3.{4}}{}}{34}{proof.3.4}%
+\contentsline {corollary}{{推论}{3.{1}}{错误边的误差局部性}}{35}{corollary.3.1}%

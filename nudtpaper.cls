@@ -225,7 +225,7 @@
 \def\CJK@today{\zhdigits{\the\year}年\zhnumber{\the\month}月}
 \renewcommand\zhtoday{\CJK@today}
 \newcommand\entoday{\monthname{}, \the\year}
-\geometry{top=21mm,bottom=25.5mm,left=30mm,right=30mm}
+\geometry{top=25mm,bottom=25mm,left=30mm,right=30mm}
 \geometry{headheight=9mm,headsep=1mm,footskip=9mm}
 \renewcommand\setheadrule[1]{%
   \ifdim#1=\z@
@@ -525,48 +525,50 @@
   \begin{center}\leavevmode % 表格环境
   {\fangsong \wuhao[1.25]%
     \begin{tabular}{llcll}
-    分类号  & \entry{1}{3.2cm}{\@classification} & \hspace*{4.8cm}%
-    学号    & \entry{1}{3.2cm}{\@serialno}         \\[5mm]    %
-    U\ D\ C & \entry{1}{3.2cm}{\@UDC} &            \hspace*{4.8cm}
-    密级 & \entry{1}{3.2cm}{\@confidentiality}
+    分类号  & \entry{1}{4.2cm}{\@classification} & \hspace*{2.8cm}%
+    学号    & \entry{1}{4.2cm}{\@serialno}         \\[5mm]    %
+    U\ D\ C & \entry{1}{4.2cm}{\@UDC} &            \hspace*{2.8cm}
+    密级 & \entry{1}{4.2cm}{\@confidentiality}
     \end{tabular}
   }
   \par
   \vspace*{2.5cm} %插入空白
-  {\heiti\sanhao \@papertype{}\@optionpaperclass{}学位论文}\\
+  {\heiti\sanhao[1.25] \@optionpaperclass{}学位论文}\\
+  \vspace{12bp}
+  {\heiti\sanhao[1.25] （学术学位）}\\
   \vspace{12bp}
   {\cusong\erhao[1.25] \@title \par}%
   \vspace{45bp} %从WORD中得来
   {\heiti \sihao
-    \begin{tabular}{cp{8cm}c}
-      \ifismaster
-      \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{硕\hfill{}士\hfill{}生\hfill{}姓\hfill{}名}} &
-      \else
-      \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{博\hfill{}士\hfill{}生\hfill{}姓\hfill{}名}} &
-      \fi
-        {\fs \hfil\raisebox{-3.7ex}[0pt]{\@author}\hfil{}} & \\[3.2ex]
-        \cline{2-2}
-        \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{学\hfill{}科\hfill{}专\hfill{}业}} &
-        {\fs \hfil\raisebox{-3.7ex}[0pt]{\@subject}\hfil{}} & \\[3.2ex]
-        \cline{2-2}
-        \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{研\hfill{}究\hfill{}方\hfill{}向}} &
-        {\fs \hfil\raisebox{-3.7ex}[0pt]{\@researchfield}\hfil{}} & \\[3.2ex]
-        \cline{2-2}
-        \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{指\hfill{}导\hfill{}教\hfill{}师}} &
-        {\fs \hfil\raisebox{-3.7ex}[0pt]{\@supervisor}\hfil{}} & \\[3.2ex]
-        \cline{2-2}
-      \ifx\@cosupervisor\@empty\else
-      \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{协\hfill{}助\hfill{}指\hfill{}导\hfill{}教\hfill{}师}} &
-          {\fs \hfil\raisebox{-3.7ex}[0pt]{\@cosupervisor}\hfil{}} & \\[3.2ex]
-          \cline{2-2}
-      \fi
-    \end{tabular}
+		\begin{tabular}{c @{\hspace{0.5cm}} m{7cm} c}
+		  \ifismaster
+		  \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{硕\hfill{}士\hfill{}生\hfill{}姓\hfill{}名}} &
+		  \else
+		  \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{博\hfill{}士\hfill{}生\hfill{}姓\hfill{}名}} &
+		  \fi
+		    {\fs \hfil\raisebox{-3.7ex}[0pt]{\@author}\hfil{}} & \\[3.2ex]
+		    \cline{2-2}
+		    \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{学\hfill{}科\hfill{}专\hfill{}业}} &
+		    {\fs \hfil\raisebox{-3.7ex}[0pt]{\@subject}\hfil{}} & \\[3.2ex]
+		    \cline{2-2}
+		    \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{研\hfill{}究\hfill{}方\hfill{}向}} &
+		    {\fs \hfil\raisebox{-3.7ex}[0pt]{\@researchfield}\hfil{}} & \\[3.2ex]
+		    \cline{2-2}
+		    \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{指\hfill{}导\hfill{}教\hfill{}师}} &
+		    {\fs \hfil\raisebox{-3.7ex}[0pt]{\@supervisor}\hfil{}} & \\[3.2ex]
+		    \cline{2-2}
+		  \ifx\@cosupervisor\@empty\else
+		  \raisebox{-3.7ex}[0pt]{\makebox[3cm][s]{协\hfill{}助\hfill{}指\hfill{}导\hfill{}教\hfill{}师}} &
+		      {\fs \hfil\raisebox{-3.7ex}[0pt]{\@cosupervisor}\hfil{}} & \\[3.2ex]
+		      \cline{2-2}
+		  \fi
+		\end{tabular}
   }
   \end{center}%
 
   \par
   \vfill
-  {\centering \cusong \sanhao \ifisanon{~}\else{国防科技大学研究生院}\fi\\[0.8em]
+  {\centering \cusong \sanhao \ifisanon{~}\else{国防科技大学}\fi\\[0.8em]
     {\@zhdate \par}%
   }
   \vspace{1mm}
@@ -575,8 +577,9 @@
   \thispagestyle{empty}%
 
   \begin{center}\leavevmode
-  \vfill\bfseries 
-  {\bf \erhao[1.25] \@entitle \par   \vfill\vfill\vfill\vfill\vfill}
+
+  {\bf \erhao[1.25] \@entitle \par}
+  \vspace{55bp}
   {\bf \sanhao[1.25] %调整与word一致
   \begin{tabular}{rl}
     Candidate:\ & {\textsf{\@enauthor}}\\
@@ -584,19 +587,20 @@
     \ifx\@encosupervisor\@empty\else
       Associate \@optionas{}:\ & {\textsf{\@encosupervisor}} \\
     \fi
-  \end{tabular}}
-  \vfill\vfill\vfill\vfill\vfill
+  \end{tabular}
+  \par}
+  \vspace{80bp}
   {\bf \sanhao[1.5] %调整与word一致
 A dissertation\\
 Submitted in partial fulfillment of the requirements\\
 for the degree of \textsf{\@optionpaperclassen{} of \@enpapertype}\\
 in \textsf{\@ensubject}\\
-\makebox[\textwidth]{\ifisanon{~}\else{Graduate School of National University of %
-Defense Technology}\fi}\\
-\ifisanon{~}\else{Changsha, Hunan, P.\ R.\ China}\fi\\[5mm]
+\ifisanon{~}\else{Graduate School of National University of %
+Defense Technology }\fi \\ [1em]
+%\ifisanon{~}\else{Changsha, Hunan, P.\ R.\ China}\fi \\
 ~\@endate~
   }
-  \end{center}\vfill
+  \end{center}
   
 \renewcommand{\baselinestretch}{1.5}%
 

@@ -67,48 +67,51 @@ KCI\cite{Sun2007}与KCI-test\cite{Zhang2012}从检验方法泛化性切入，RFC
 利用结构不对称的方法的核心思路是利用因果关系中存在的结构不对称性来识别因果方向，突破了传统方法难以区分马尔可夫等价类中因果方向的局限。其基本逻辑为：在因果关系X→Y中，原因X与结果Y的生成机制存在不对称性（如噪声分布、函数复杂度、边际分布与条件分布的独立性等），这种不对称性可通过数据挖掘并用于因果方向推断。代表性方法包括基于非高斯加性噪声模型（LiNGAM）\cite{Shimizu2006}、后非线性加性噪声模型（Non-linear ANM）\cite{Patrik2008}、信息几何因果推断（IGCI）\cite{Janzing2012}以及一些其他算法\cite{潘夷琛}，其中LiNGAM假设数据生成过程为线性且噪声非高斯，通过独立成分分析（ICA）分离噪声，进而确定因果方向；Non-linear ANM凭借非线性因果函数与加性噪声的结构不对称设计，实现了从线性到非线性因果场景的方向推断拓展；IGCI则利用“原因的边际分布与因果机制独立”的假设，通过信息几何度量来区分因果方向；以及PNL算法\cite{Zhang2009}凭借 “线性变换 + 非线性映射 + 加性噪声” 的复合结构设计，拓展了结构不对称方法在复杂非线性因果中的适用性。利用结构不对称的方法的优势在于无需干预数据即可实现因果方向的识别，为解决“因果推断基本问题”提供了新思路；局限在于需要较强的模型假设，这些假设在真实场景中可能不成立，且大多为局部方法，难以直接构建大规模因果图。
 
 除了以上三类方法之外，MMHC\cite{Tsamardinos2006}、ARGES\cite{Nandy2016}等\cite{闫琳2026}算法融合了基于约束和基于评分方法的核心思想，作为一种兼顾两种思想优势的混合方法。总体而言，基于组合和搜索的因果发现方法将图形结构DAG视为离散组合对象，图形的核心是 “节点间有无边、边的方向” 等离散属性，学习目标是从 “所有可能的离散结构集合”中筛选出符合数据特征的结构。可能的DAG数量随着变量数量的增加呈超指数增长\cite{Harary1973}，正如Peters等人\cite{Peters2017}指出，10个变量的可能DAG数量$>4\times10^{18}$，该搜索问题是NP-hard问题\cite{Chickering1996}。因此，传统因果发现方法在低维数据场景下具备良好的性能和可解释性，但普遍面临高维数据下搜索空间爆炸、强假设依赖与真实场景脱节、难以揭示因果内在机制等问题。
-\begin{table}[H]
-	\centering
-	\begin{minipage}[t]{\linewidth}
-		\caption{基于组合和搜索的因果发现算法}
-		\label{causal_discovery_methods}
-		\begin{tabularx}{\linewidth}{lcccccc}
-			\toprule[1.5pt]
-			\textbf{算法} & \textbf{年份} & \textbf{类型} & \textbf{充分性} & \textbf{忠诚性} & \textbf{无循环性} & \textbf{输出类型} \\
-			\midrule[1pt]
-			PC\cite{Spirtes2000} & 1993 & 约束 & 是 & 是 & 是 & CPDAG \\
-			FCI\cite{Spirtes1995} & 1995 & 约束 & 否 & 是 & 是 & POIPG \\
-			KCI\cite{Sun2007} & 2007 & 约束 & 是 & 是 & 是 & CPDAG \\
-			KCI-test\cite{Zhang2012} & 2012 & 约束 & 是 & 是 & 是 & CPDAG \\
-			RFCI\cite{Colombo2011} & 2012 & 约束 & 否 & 是 & 是 & PAG \\
-			Parallel-PC\cite{Le2019} & 2014 & 约束 & 是 & 是 & 是 & CPDAG \\
-			PC-stable\cite{Colombo2014} & 2014 & 约束 & 是/否 & 是 & 是/否 & CPDAG \\
-			FCI-soft\cite{Kocaoglu2020} & 2019 & 约束 & 否 & 松弛 & 是 & MEC \\
-			psi-FCI\cite{Jaber2020} & 2020 & 约束 & 否 & 松弛 & 是 & Psi-EC \\
-
-			EG\cite{Elidan2008} & 2009 & 评分 & 是 & 是 & 是 & BT-DAG \\
-			CAM \cite{Buehlmann2013} & 2014 & 评分 & 是 & 是 & 是 & CPDAG \\
-			K2\cite{Cooper1992} & 1992 & 评分 & 否 & 是 & 是 & CPDAG \\
-			HGC\cite{Heckerman1995} & 1995 & 评分 & 是 & 是 & 是 & CPDAG \\
-			GES\cite{Chickering2003} & 2002 & 评分 & 是 & 是 & 是 & CPDAG \\
-			BC\cite{ElGhaoui2008} & 2008 & 评分 & 是 & -- & 否 & UG \\
-			TC\cite{Pellet2008} & 2008 & 评分 & 是 & 是 & 是 & CPDAG \\
-			Adaptive Lasso\cite{Michailidis2010} & 2010 & 评分 & 是 & 是 & 是 & DAG \\
-			GIES\cite{Hauser2012} & 2012 & 评分 & 是 & 是 & 是 & PDAG \\
-			GES-mod\cite{AlonsoBarba2013} & 2013 & 评分 & 是 & 是 & 是 & CPDAG \\
-			Pen-PC\cite{Ha2015} & 2015 & 评分 & 是 & 是 & 是 & CPDAG \\
-			K-A*\cite{Scanagatta2016} & 2016 & 评分 & 是 & 是 & 是 & DAG \\
-
-			LiNGAM\cite{Patrik2008} & 2006 & 结构不对称 & 是 & 否 & 是 & DAG \\
-			non-linear ANM \cite{Janzing2012} & 2008 & 结构不对称 & 是 & 是 & 是 & DAG \\
-			PNL {Zhang2009} & 2009 & 结构不对称 & 是 & 否 & 是 & DAG \\
-			MMHC \cite{Tsamardinos2006} & 2006 & 混合 & 是 & 是 & 是 & DAG \\
-			ARGES \cite{Nandy2016} & 2018 & 混合 & 是 & 是 & 是 & CPDAG \\
-
-			\bottomrule[1.5pt]
-		\end{tabularx}
-	\end{minipage}
-\end{table}
+\begin{longtable}{lc*{5}{c}}
+	\caption{基于组合和搜索的因果发现算法}\label{causal_discovery_methods}\\
+	\toprule[1.5pt]
+	\textbf{算法} & \textbf{年份} & \textbf{类型} & \textbf{充分性} & \textbf{忠诚性} & \textbf{无循环性} & \textbf{输出类型} \\
+	\midrule[1pt]
+	\endfirsthead
+	
+	\multicolumn{7}{c}{续表~\thetable\hskip1em 基于组合和搜索的因果发现算法}\\
+	\toprule[1.5pt]
+	\textbf{算法} & \textbf{年份} & \textbf{类型} & \textbf{充分性} & \textbf{忠诚性} & \textbf{无循环性} & \textbf{输出类型} \\
+	\midrule[1pt]
+	\endhead
+	\hline
+	\multicolumn{7}{r}{续下页}\\
+	\endfoot
+	\bottomrule[1.5pt]
+	\endlastfoot
+	
+	PC\cite{Spirtes2000} & 1993 & 约束 & 是 & 是 & 是 & CPDAG \\
+	FCI\cite{Spirtes1995} & 1995 & 约束 & 否 & 是 & 是 & POIPG \\
+	KCI\cite{Sun2007} & 2007 & 约束 & 是 & 是 & 是 & CPDAG \\
+	KCI-test\cite{Zhang2012} & 2012 & 约束 & 是 & 是 & 是 & CPDAG \\
+	RFCI\cite{Colombo2011} & 2012 & 约束 & 否 & 是 & 是 & PAG \\
+	Parallel-PC\cite{Le2019} & 2014 & 约束 & 是 & 是 & 是 & CPDAG \\
+	PC-stable\cite{Colombo2014} & 2014 & 约束 & 是/否 & 是 & 是/否 & CPDAG \\
+	FCI-soft\cite{Kocaoglu2020} & 2019 & 约束 & 否 & 松弛 & 是 & MEC \\
+	psi-FCI\cite{Jaber2020} & 2020 & 约束 & 否 & 松弛 & 是 & Psi-EC \\
+	EG\cite{Elidan2008} & 2009 & 评分 & 是 & 是 & 是 & BT-DAG \\
+	CAM \cite{Buehlmann2013} & 2014 & 评分 & 是 & 是 & 是 & CPDAG \\
+	K2\cite{Cooper1992} & 1992 & 评分 & 否 & 是 & 是 & CPDAG \\
+	HGC\cite{Heckerman1995} & 1995 & 评分 & 是 & 是 & 是 & CPDAG \\
+	GES\cite{Chickering2003} & 2002 & 评分 & 是 & 是 & 是 & CPDAG \\
+	BC\cite{ElGhaoui2008} & 2008 & 评分 & 是 & -- & 否 & UG \\
+	TC\cite{Pellet2008} & 2008 & 评分 & 是 & 是 & 是 & CPDAG \\
+	Adaptive Lasso\cite{Michailidis2010} & 2010 & 评分 & 是 & 是 & 是 & DAG \\
+	GIES\cite{Hauser2012} & 2012 & 评分 & 是 & 是 & 是 & PDAG \\
+	GES-mod\cite{AlonsoBarba2013} & 2013 & 评分 & 是 & 是 & 是 & CPDAG \\
+	Pen-PC\cite{Ha2015} & 2015 & 评分 & 是 & 是 & 是 & CPDAG \\
+	K-A*\cite{Scanagatta2016} & 2016 & 评分 & 是 & 是 & 是 & DAG \\
+	LiNGAM\cite{Patrik2008} & 2006 & 不对称 & 是 & 否 & 是 & DAG \\
+	non-linear ANM \cite{Janzing2012} & 2008 & 不对称 & 是 & 是 & 是 & DAG \\
+	PNL {Zhang2009} & 2009 & 不对称 & 是 & 否 & 是 & DAG \\
+	MMHC \cite{Tsamardinos2006} & 2006 & 混合 & 是 & 是 & 是 & DAG \\
+	ARGES \cite{Nandy2016} & 2018 & 混合 & 是 & 是 & 是 & CPDAG \\
+\end{longtable}
 
 {\hei 1.基于连续优化的因果发现方法}
 基于连续优化的因果发现方法主要属于基于评分的因果发现方法的范畴，近年来也有采用约束或利用不对称的连续优化方法。不同于基于组合和搜索的因果发现方法，该因果发现方法是应对高维、复杂数据场景的核心技术创新，其核心思路是将将离散结构学习转化为连续优化问题，通过设计连续约束与损失函数，利用梯度下降、增强拉格朗日法等优化工具求解最优因果结构，彻底规避了传统组合和搜索方法的NP-hard困境\cite{李家宁2023} 。近年来，基于连续优化的因果发现方法被广泛研究，研究人员不仅继续完善基于连续优化的因果发现方法理论，同时将算法拓展到现实世界中的各类因果发现挑战中，取得了丰硕的成果。
@@ -129,49 +132,59 @@ NO TEARS提出的无环约束核心思想为后续研究奠定了基础，具有
 缺乏无环约束的方法是基于连续优化的另一种技术分支。因果马赛克\cite{Wu2020}是一种基于神经网络的非线性独立成分分析，旨在区分双变量对之间的因果方向。同样，AEQ方法\cite{Galanti2020}的作者基于自编码器的重建误差开发了一个评分函数，用于发现向量值因果对的方向性，他们通过基于原始切片的排序连接创建变量的多变量版本，将该结果扩展到单变量$X$。该多变量代理的复杂度随后通过自编码器重建误差（使用$L_2$损耗）来测量。CGNN\cite{Goudet2018}将神经网络与爬山法或禁忌搜索结合起来，他们的方法包括识别可能的隐藏混杂因素的方法，利用混杂现象可以被建模为（否则）潜在潜在随机变量之间的相关性/关联。DEAR\cite{Shen2020}，它结合了变分自编码器（VAE）\cite{Kingma2013,Rezende2014}和对抗损耗\cite{Goodfellow2014}，以推断具有“因果”结构的潜在空间，假设已经给出了“超级图”，并学习了相关的权重和参。CAREFL\cite{Khemakhem2021}将因果发现与称为归一化流的深度学习框架结合，归一化流提供了构建生成模型的方法，这些模型能够通过基本且可解密度的可逆变换来建模复杂密度。它们通过变量变更公式和逆对数雅可比行列式，精确计算构成其学习目标的对数似然。ICL\cite{Wang2020}的作者聚焦于缺失数据环境下的结构发现问题，利用不完整的数据同时通过GAN补入缺失数据，以匹配生成的分布与经验分布。SDI\cite{Ke2019}假设忠实性和充分性，且限制在离散的类别变量中，且无缺失，利用经历未知干预的数据来发现结构。Ke等人\cite{Ke2020}提出了一种元学习神经网络方法，该方法还包含干预并利用图的连续表示，能够快速且高效地学习新的因果模型。CAN\cite{Moraffah2020}在推理时便于从因果图进行介入采样，在图像数据和传统数据上展现竞争性能。RL-BIC的作者\cite{Zhu2019}明确采用强化学习方法进行因果发现。它们使用编码\mbox{-}解码神经网络模型生成有向图。编码\mbox{-}解码器的输出是拟议的图，利用BIC进行评分以生成奖励信号。
 
 以及其他类型的方法指的是既不使用无环约束，也与神经网络无关的方法。Vrando（2020）\cite{Varando2020}提出了一个近端梯度优化目标，能够得到线性SEM和相应的DAG。该方法通过将学习问题框架为稀疏矩阵分解来推导新颖的目标，最终的NODAG方法被证明既有效又高效。ABIC\cite{Bhattacharya2021}扩展了连续优化范式，发现了各种类型的 ADMG（祖先型、干旱型、无弓型）来解释未测量的混杂因素，并提出了三个可微约束，可用于发现特定类型的ADMG。表\ref{tab:Continuous_causal_methods}总结了具有代表性的基于连续优化的因果发现方法，包括算法面向的数据特点，使用的求解器模型，是否遵循无循环性和最后的输出类型。值得一提的是，表中的无循环性指的是算法输出的结果是否保证无循环性，而不是是否使用了无循环约束。
-\begin{table}[H]
-	\centering
-	\begin{minipage}[t]{\linewidth}
-		\caption{基于连续优化的因果发现方法}
-		\label{tab:Continuous_causal_methods}
-		\begin{tabularx}{\linewidth}{lcccccc}
-			\toprule[1.5pt]
-			\textbf{算法} & \textbf{时间} & \textbf{数据特点} & \textbf{模型} & \textbf{无循环性} & \textbf{输出类型} \\
-			\midrule[1pt]
-			NO TEARS\cite{Zheng2018} & 2018 & 低维 & 线性 & 是 & DAG \\
-			CGNN\cite{Goudet2018} & 2018 & 低维 & 神经网络 & 是 & DAG \\
-			SAM\cite{Kalainathan2022} & 2019 & 低维/中维 & 神经网络 & 是 & DAG \\
-			DAG-GNN\cite{Yu2019} & 2019 & 低维 & 神经网络 & 是 & DAG \\
-			GAE\cite{Ng2019} & 2019 & 低维 & 神经网络 & 是 & DAG \\
-			NO BEARS\cite{Lee2019} & 2019 & 低维/中维/高维 & 多项式 & 是 & DAG \\
-			DEAR\cite{Shen2020} & 2020 & 图像 & 神经网络 & 是 & - \\
-			CAN\cite{Moraffah2020} & 2020 & 低维/中维/图像 & 神经网络 & 是 & DAG \\
-			NO FEARS\cite{Wei2020} & 2020 & 低维 & 线性 & 是 & DAG \\
-			DAGMA\cite{Bello2022} & 2022 & 低维 & 神经网络 & 是 & DAG \\
-			Dagma-DCE\cite{Waxman2024} & 2024 & 低维 & 神经网络 & 是 & DAG \\
-			DTSL\cite{Berrevoets2023} & 2023 & 低维 & 神经网络 & 是 & DAG \\
-			LeCaSiM\cite{Cai2024} & 2024 & 低维 & 神经网络 & 是 & DAG \\
-			DAGOR\cite{Zuo2024} & 2024 & 低维/中维/高维 & 神经网络 & 是 & DAG \\
-			GOLEM\cite{Ng2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
-			ABIC\cite{Bhattacharya2021} & 2020 & 低维 & 线性 & 是 & ADMG/PAG \\
-			DYNOTEARS\cite{Pamfil2020} & 2020 & 低维 & 线性 & 是 & SVAR \\
-			SDI\cite{Ke2019} & 2020 & 低维 & 神经网络 & 是 & DAG \\
-			AEQ\cite{Galanti2020} & 2020 & 二元 & 神经网络 & - & direction \\
-			CRN\cite{Ke2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
-			CASTLE\cite{Kyono2020} & 2020 & 低维/中维 & 神经网络 & 是 & DAG \\
-			GranDAG\cite{Lachapelle2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
-			MaskedNN\cite{Ng2022} & 2020 & 低维 & 神经网络 & 是 & DAG \\
-			CausalVAE\cite{Yang2021} & 2020 & 图像 & 神经网络 & 是 & DAG \\
-			CAREFL\cite{Khemakhem2021} & 2020 & 低维 & 神经网络 & 是 & DAG/direction \\
-			Varando\cite{Varando2020} & 2020 & 低维 & 线性 & 是 & DAG \\
-			NO TEARS+\cite{Zheng2020a} & 2020 & 低维 & 非线性 & 是 & DAG \\
-			ICL\cite{Wang2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
-			LEAST\cite{Zhu2021} & 2020 & 低维/中维/高维 & 线性 & 是 & DAG \\
-			CausalMosaic\cite{Wu2020} & 2020 & 二元 & 神经网络 & - & direction \\
-			\bottomrule[1.5pt]
-		\end{tabularx}
-	\end{minipage}
-\end{table}
+
+综上所述，基于连续优化的因果发现方法有效突破了高维场景下的组合搜索瓶颈，并在非线性建模与计算效率方面取得显著进展。然而，现有方法多依赖多层感知机等黑箱架构，因果函数隐含于网络权重之中，难以显式刻画变量间的具体作用形式；同时，无环约束的连续近似与结构稀疏性之间尚未形成高效协同。针对上述局限，本文第三章提出基于KAN的连续优化因果发现算法（DAG-KAN）。该方法将KAN的边激活特性与可学习B样条函数嵌入连续优化框架，结合节点独立性矩阵与L1稀疏正则化，在维持梯度优化效率的前提下，实现因果图结构与因果函数的联合学习。该设计旨在弥补现有方法“重结构、轻机制”的不足，为后续复杂非线性因果关系的可解释建模提供直接的技术支撑。
+
+
+\begin{longtable}{lc*{4}{c}}
+	\caption{基于连续优化的因果发现方法}\label{tab:Continuous_causal_methods}\\
+	\toprule[1.5pt]
+	\textbf{算法} & \textbf{时间} & \textbf{数据特点} & \textbf{模型} & \textbf{无循环性} & \textbf{输出类型} \\
+	\midrule[1pt]
+	\endfirsthead
+	
+	\multicolumn{6}{c}{续表~\thetable\hskip1em 基于连续优化的因果发现方法}\\
+	\toprule[1.5pt]
+	\textbf{算法} & \textbf{时间} & \textbf{数据特点} & \textbf{模型} & \textbf{无循环性} & \textbf{输出类型} \\
+	\midrule[1pt]
+	\endhead
+	\hline
+	\multicolumn{6}{r}{续下页}\\
+	\endfoot
+	\bottomrule[1.5pt]
+	\endlastfoot
+	
+	NO TEARS\cite{Zheng2018} & 2018 & 低维 & 线性 & 是 & DAG \\
+	CGNN\cite{Goudet2018} & 2018 & 低维 & 神经网络 & 是 & DAG \\
+	SAM\cite{Kalainathan2022} & 2019 & 低/中维 & 神经网络 & 是 & DAG \\
+	DAG-GNN\cite{Yu2019} & 2019 & 低维 & 神经网络 & 是 & DAG \\
+	GAE\cite{Ng2019} & 2019 & 低维 & 神经网络 & 是 & DAG \\
+	NO BEARS\cite{Lee2019} & 2019 & 低/中/高维 & 多项式 & 是 & DAG \\
+	DEAR\cite{Shen2020} & 2020 & 图像 & 神经网络 & 是 & - \\
+	CAN\cite{Moraffah2020} & 2020 & 低/中维/图像 & 神经网络 & 是 & DAG \\
+	NO FEARS\cite{Wei2020} & 2020 & 低维 & 线性 & 是 & DAG \\
+	DAGMA\cite{Bello2022} & 2022 & 低维 & 神经网络 & 是 & DAG \\
+	Dagma-DCE\cite{Waxman2024} & 2024 & 低维 & 神经网络 & 是 & DAG \\
+	DTSL\cite{Berrevoets2023} & 2023 & 低维 & 神经网络 & 是 & DAG \\
+	LeCaSiM\cite{Cai2024} & 2024 & 低维 & 神经网络 & 是 & DAG \\
+	DAGOR\cite{Zuo2024} & 2024 & 低/中/高维 & 神经网络 & 是 & DAG \\
+	GOLEM\cite{Ng2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	ABIC\cite{Bhattacharya2021} & 2020 & 低维 & 线性 & 是 & ADMG/PAG \\
+	DYNOTEARS\cite{Pamfil2020} & 2020 & 低维 & 线性 & 是 & SVAR \\
+	SDI\cite{Ke2019} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	AEQ\cite{Galanti2020} & 2020 & 二元 & 神经网络 & - & direction \\
+	CRN\cite{Ke2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	CASTLE\cite{Kyono2020} & 2020 & 低/中维 & 神经网络 & 是 & DAG \\
+	GranDAG\cite{Lachapelle2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	MaskedNN\cite{Ng2022} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	CausalVAE\cite{Yang2021} & 2020 & 图像 & 神经网络 & 是 & DAG \\
+	CAREFL\cite{Khemakhem2021} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	Varando\cite{Varando2020} & 2020 & 低维 & 线性 & 是 & DAG \\
+	NO TEARS+\cite{Zheng2020a} & 2020 & 低维 & 非线性 & 是 & DAG \\
+	ICL\cite{Wang2020} & 2020 & 低维 & 神经网络 & 是 & DAG \\
+	LEAST\cite{Zhu2021} & 2020 & 低/中/高维 & 线性 & 是 & DAG \\
+	CausalMosaic\cite{Wu2020} & 2020 & 二元 & 神经网络 & - & direction \\
+\end{longtable}
 
 \subsection{基于知识融合的因果发现方法}
 \label{基于知识融合的因果发现方法}
@@ -189,6 +202,8 @@ NO TEARS提出的无环约束核心思想为后续研究奠定了基础，具有
 
 通过限制网络中节点的父集（入度）来缩小搜索空间的大小，证明了一般父集合很大的网络往往得分会比较低，在实际应用中很少有这样的网络结构并且很少有足够的数据来支撑\cite{Friedman2013}。另有研究使用了两种约束，一个节点的入度和节点之间的弧度，该方法可以极大地降低算法的时间和内存开销\cite{DeCampos2009}。部分研究将基因表达数据学习因果网络的各种结构限制编码为先验知识，通过描述一些类型的结构限制来解决额外先验知识的使用，考虑了三种类型的结构约束，包括存在性约束、缺失限制以及排序结构限制，证明了研究从表达数据中针对因果网络结构学习算法能够在利用结构约束的情况下利用这种先验知识获得更好结果\cite{De2019}。一些学者将领域知识的结构限制区分为硬约束和软约束，一些学者通过有向边的相关约束减少搜索空间，这些所提出的约束都属于硬约束，强制模型必须满足这些约束限制条件\cite{Wu2015}。另有研究提出了软约束，通过计算专家指定结构与候选结构之间编辑距离的先验分布来计算网络结构的相对后验概率，选取最优的候选结构\cite{Heckerman1995}。还有些学者通过将领域知识内的特定约束转换为规则来限制搜索策略的进行，利用特定的领域知识表示为规则，利用规则来约束因果结构网络的构建，减少网络的搜索空间\cite{赵建喆2020}。
 
+现有研究多将先验知识作为损失函数的正则项或搜索过程的约束条件，知识融合多停留在算法外层，未与求解器架构深度耦合，且难以兼顾复杂非线性因果函数的显式建模。针对上述局限，本文第四章提出基于KAN的知识融合因果发现方法（Causal-KAN）。该方法将已知因果骨架直接转化为网络输入层的二进制掩码结构，使先验知识以架构级硬约束的形式嵌入模型内部，从源头阻断非因果路径的干扰。结合KAN的局部连接激活机制与样条函数逼近能力，该方法在保障因果忠实性的同时，实现了对非参数因果机制的精准拟合，有效克服了传统方法在知识融合中可解释性不足与易过拟合的问题。
+
 \subsection{研究现状分析与总结}
 \label{研究现状分析与总结}
 综上所述，当前因果发现领域已在基于观测数据的结构学习及先验知识融合方面取得了丰硕成果，特别是基于连续优化的框架有效突破了高维场景下的组合搜索瓶颈，而知识引导策略则为数据匮乏场景提供了新的解决思路。然而，纵观现有研究，仍存在以下亟待突破的局限性：
@@ -205,12 +220,6 @@ NO TEARS提出的无环约束核心思想为后续研究奠定了基础，具有
 \section{本文主要研究内容}
 \label{本文主要研究内容}
 上一节介绍了基于连续优化和基于先验知识融合的因果发现方法。针对现有方法的不足，本文研究内容主要解决两个问题：第一，现有因果发现方法通常仅输出有向无环图，缺乏对因果函数的刻画。这是因为黑盒神经网络与因果发现结合时，因果函数被隐含在网络权重中，无法解释，忽视了结构因果模型中函数的重要性；第二，真实场景数据多为非参数或半参数分布，有限参数模型难以准确刻画，且现有方法缺乏有效的先验知识融合机制。图\ref{本文的研究内容及相互关系}展示了本文的研究内容及相互关系。针对提出的两个挑战，本文分别提出了两个研究内容，下面详细介绍两个研究内容。
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=\linewidth]{研究内容及相互关系}
-	\caption{本文的研究内容及相互关系}
-	\label{本文的研究内容及相互关系}
-\end{figure}
 
 {\hei 1.基于KAN的连续优化因果发现算法研究}
 
@@ -219,6 +228,12 @@ NO TEARS提出的无环约束核心思想为后续研究奠定了基础，具有
 {\hei 2.基于KAN的知识融合因果发现算法研究}
 
 本文提出基于 KAN 的知识融合因果发现算法（Causal-KAN），并完成实验验证。针对真实场景中普遍存在的非参数或半参数数据，设计知识嵌入层与局部连接激活层的网络架构。通过在输入层引入因果掩码机制，将部分已知的因果父节点关系硬编码为网络约束，在深层网络引入局部连接激活层完成对任意分布的拟合，在保障因果忠实性的同时释放深层网络的函数逼近能力。在实验验证方面，通过模拟数据实验，在已知因果骨架前提下验证模型对非线性因果函数的拟合能力及抗过拟合性能；利用 Sachs 数据集嵌入先验知识，对比无约束模型，分析训练损失与测试损失的差距，验证知识嵌入防止过拟合的有效性，并对学习到的因果函数进行通路贡献量化分析，评估其可解释性。Sachs 真实数据集实验表明，嵌入因果知识可有效防止过拟合，且学习到的因果函数具有可解释性。
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth]{研究内容及相互关系}
+	\caption{本文的研究内容及相互关系}
+	\label{本文的研究内容及相互关系}
+\end{figure}
 
 \section{本文的组织结构}
 \label{本文的组织结构}

@@ -1,26 +1,26 @@
 \contentsline {figure}{\numberline {1.1}{\ignorespaces 药物剂量和血压下降值之间的映射因果示意图}}{1}{figure.caption.8}%
-\contentsline {figure}{\numberline {1.2}{\ignorespaces 有向无环图与函数因果模型之间的关系}}{3}{figure.caption.9}%
-\contentsline {figure}{\numberline {1.3}{\ignorespaces 本文的研究内容及相互关系}}{15}{figure.caption.12}%
-\contentsline {figure}{\numberline {3.1}{\ignorespaces KAN求解器的结构}}{29}{figure.caption.15}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces 左图：DAG 和 CMFs 以 KAN 模块的形式呈现，链接 $x_k \to \phi _{j,k} \to x_j$ 表示子节点 $x_k$ 通过函数 $\phi _{j,k}$ 影响父节点 $x_j$。非因果链接通过阈值过滤进行剪枝。右图：DAG 和 CMFs 以邻接矩阵的形式呈现。}}{38}{figure.caption.17}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces 6个加性模型上的平均SHD结果（数值越低越好）。图中每个数据点基于5次重复实验估算，误差条表示标准误差。结果取自6个加性模型与2个同等复杂度图模型的平均值（共12个案例）。}}{42}{figure.caption.21}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces DAG-KAN、CAM与DAGMA所有指标的比较，选取6个加性模型与2个图模型（共12个案例）的平均值。结构汉明距离、FDR和运行时间数值越低越优，TPR数值越高越优。图中每个数据点基于5次重复实验估算，误差条表示标准误差。}}{43}{figure.caption.22}%
-\contentsline {figure}{\numberline {3.5}{\ignorespaces DAG-KAN与多种算法在不同设置下的SHD对比。}}{45}{figure.caption.24}%
-\contentsline {figure}{\numberline {3.6}{\ignorespaces DAG-KAN与多种算法在不同设置下的TPR对比。}}{45}{figure.caption.25}%
-\contentsline {figure}{\numberline {3.7}{\ignorespaces DAG-KAN与多种算法在不同设置下的FPR对比。}}{46}{figure.caption.26}%
-\contentsline {figure}{\numberline {3.8}{\ignorespaces DAG-KAN与多种算法在不同设置下的运行时间对比。}}{47}{figure.caption.27}%
-\contentsline {figure}{\numberline {3.9}{\ignorespaces 真实数据实验结果}}{49}{figure.caption.29}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces 有向无环图与函数因果模型之间的关系图}}{3}{figure.caption.9}%
+\contentsline {figure}{\numberline {1.3}{\ignorespaces 本文的研究内容及相互关系图}}{17}{figure.caption.10}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces KAN求解器的结构设计图}}{30}{figure.caption.13}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces 模拟数据联合学习实验结果图}}{39}{figure.caption.15}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces 模拟数据结构学习的SHD结果对比图}}{43}{figure.caption.19}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces DAG-KAN、CAM与DAGMA综合指标的对比图}}{44}{figure.caption.20}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces DAG-KAN与多种算法在不同设置下的SHD对比图}}{46}{figure.caption.22}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces DAG-KAN与多种算法在不同设置下的TPR对比图}}{46}{figure.caption.23}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces DAG-KAN与多种算法在不同设置下的FPR对比图}}{47}{figure.caption.24}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces DAG-KAN与多种算法在不同设置下的运行时间对比图}}{47}{figure.caption.25}%
+\contentsline {figure}{\numberline {3.9}{\ignorespaces 真实数据联合学习实验结果图}}{49}{figure.caption.27}%
 \contentsline {subfigure}{\numberline {((a))}{\ignorespaces {Sachs数据集真实标签}}}{49}{subfigure.9.1}%
 \contentsline {subfigure}{\numberline {((b))}{\ignorespaces {Sachs数据集上的实验结果。}}}{49}{subfigure.9.2}%
-\contentsline {figure}{\numberline {3.10}{\ignorespaces 不同网格数($g$)和阶数($k$)下，RBF与RBF+周期加性模型中DAG-KAN的结构汉明距离(SHD，蓝色直方图)与真实阳性率(TPR，红色折线)。}}{51}{figure.caption.30}%
-\contentsline {figure}{\numberline {4.1}{\ignorespaces Causal-KAN核心逻辑示意图}}{54}{figure.caption.32}%
-\contentsline {figure}{\numberline {4.2}{\ignorespaces Causal-KAN第一层的知识融合结构。整体分为三层：底部是$d$个输入节点，中间是粉色的$m^1 \times d$掩码激活单元（带专属功能符号），顶部是$m^1$个输出预测节点。实心箭头（$M=1$）代表因果父变量与激活单元之间的有效连接，虚线箭头（$M=0$）代表非因果输入不参与后续计算，直接绕过激活单元。 }}{56}{figure.caption.33}%
-\contentsline {figure}{\numberline {4.3}{\ignorespaces 局部连接激活层结构（黄色区域）。该层将维度为$m^{l-1} \times d$的输入特征转换为$m^{l+1}$个输出。实线代表有效计算路径，每条路径对应独立的激活函数$\eta _i$；虚线代表输入被绕过，不参与当前计算，以此保持各因果机制相互独立。}}{57}{figure.caption.34}%
-\contentsline {figure}{\numberline {4.4}{\ignorespaces Causal-KAN整体架构。该架构分为三层结构：底层为因果知识嵌入层（粉色掩码激活层），中间为可选堆叠隐藏层（浅蓝色），顶层为局部连接输出层（黄色），可在因果约束下完成因果结构与函数的联合学习。}}{58}{figure.caption.35}%
-\contentsline {figure}{\numberline {4.5}{\ignorespaces Sachs数据集的因果结构}}{65}{figure.caption.41}%
-\contentsline {figure}{\numberline {4.6}{\ignorespaces 初始化后的KAN结构}}{66}{figure.caption.43}%
-\contentsline {figure}{\numberline {4.7}{\ignorespaces 训练进度比较}}{67}{figure.caption.44}%
+\contentsline {figure}{\numberline {3.10}{\ignorespaces 参数敏感性分析图}}{51}{figure.caption.28}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Causal-KAN核心逻辑示意图}}{54}{figure.caption.30}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Causal-KAN的知识融合层设计图}}{56}{figure.caption.31}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Causal-KAN的局部连接激活层设计图}}{57}{figure.caption.32}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Causal-KAN整体架构设计图}}{58}{figure.caption.33}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Sachs数据集的因果结构图}}{65}{figure.caption.39}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces 初始化后的KAN结构图}}{66}{figure.caption.41}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces 训练进度对比图}}{67}{figure.caption.42}%
 \contentsline {subfigure}{\numberline {((a))}{\ignorespaces {无因果约束}}}{67}{subfigure.7.1}%
 \contentsline {subfigure}{\numberline {((b))}{\ignorespaces {带因果约束}}}{67}{subfigure.7.2}%
-\contentsline {figure}{\numberline {4.8}{\ignorespaces PIP2调控中各通路的差异贡献}}{67}{figure.caption.45}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces PIP2调控中各通路的差异贡献图}}{67}{figure.caption.43}%
 \contentsfinish 

@@ -7,7 +7,7 @@
 \contentsline {section}{\numberline {1.4}公式定理}{7}{section.1.4}%
 \contentsline {section}{\numberline {1.5}参考文献}{9}{section.1.5}%
 \contentsline {section}{\numberline {1.6}代码高亮}{9}{section.1.6}%
-\contentsline {section}{\numberline {1.7}符号列表}{10}{section.1.7}%
+\contentsline {section}{\numberline {1.7}符号列表}{11}{section.1.7}%
 \contentsline {section}{\numberline {1.8}中文习惯}{12}{section.1.8}%
 \contentsline {chapter}{致谢}{13}{chapter*.17}%
 \contentsline {chapter}{参考文献}{15}{section*.18}%
